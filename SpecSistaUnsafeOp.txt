@@ -1,0 +1,561 @@
+{
+
+"unmapped":[
+
+{
+"num":1000,
+"name":"rawClass",
+"argGuarantees":["not a forwarder"],
+"retGuarantee":"Behavior",
+"comments":"Same as class special send, but receiver is not a forwarder"
+},
+
+{
+"num":1001,
+"name":"numSlots",
+"argGuarantees":["pointer object"],
+"retGuarantee":"Smi between 0 and SmallInteger maxVal // 4 - 1",
+"comments":"Answers total size in pointer-sized slots"
+},
+{
+"num":1002,
+"name":"numBytes",
+"argGuarantees":["byte object"],
+"retGuarantee":"Smi between 0 and SmallInteger maxVal - 9",
+"comments":"Includes compiled code"
+},
+{
+"num":1003,
+"name":"numShorts",
+"argGuarantees":["short object"],
+"retGuarantee":"Smi between 0 and SmallInteger maxVal - 9",
+"comments":""
+},
+{
+"num":1004,
+"name":"numWords",
+"argGuarantees":["word object"],
+"retGuarantee":"Smi between 0 and SmallInteger maxVal - 9",
+"comments":""
+},
+{
+"num":1005,
+"name":"numDoubleWords",
+"argGuarantees":["double word object"],
+"retGuarantee":"Smi between 0 and SmallInteger maxVal - 9",
+"comments":""
+},
+
+{
+"num":1011,
+"name":"rawNew",
+"argGuarantees":["literal which is a fixed-sized behavior"],
+"retGuarantee":"instance of the receiver with fields nilled out",
+"comments":""
+},
+{
+"num":1012,
+"name":"rawNewNoInit",
+"argGuarantees":["literal which is a fixed-sized behavior"],
+"retGuarantee":"instance of the receiver",
+"comments":"Fields of returned value contain undefined data"
+},
+
+{
+"num":1020,
+"name":"objectIdentityHash",
+"argGuarantees":["non-immediate and non-behavior"],
+"retGuarantee":"22 bits strictly positive Smi",
+"comments":""
+},
+{
+"num":1021,
+"name":"smiIdentityHash",
+"argGuarantees":["Smi"],
+"retGuarantee":"Smi",
+"comments":""
+},
+{
+"num":1022,
+"name":"charIdentityHash",
+"argGuarantees":["Character"],
+"retGuarantee":"22 bits strictly positive Smi",
+"comments":""
+},
+{
+"num":1023,
+"name":"smallfloatIdentityHash",
+"argGuarantees":["SmallFloat"],
+"retGuarantee":"Smi",
+"comments":""
+},
+{
+"num":1024,
+"name":"behaviorIdentityHash",
+"argGuarantees":["Behavior"],
+"retGuarantee":"22 bits strictly positive Smi",
+"comments":""
+},
+
+{
+"num":1030,
+"name":"characterAsInteger",
+"argGuarantees":["Character"],
+"retGuarantee":"22 bits strictly positive Smi (Unicode)",
+"comments":""
+},
+{
+"num":1031,
+"name":"smallFloatAsInteger",
+"argGuarantees":["SmallFloat"],
+"retGuarantee":"Smi",
+"comments":""
+},
+{
+"num":1032,
+"name":"smiAsFloat",
+"argGuarantees":["Smi"],
+"retGuarantee":"SmallFloat",
+"comments":""
+},
+
+
+{
+"num":1039,
+"name":"unforwardNonImmediate",
+"argGuarantees":["non immediate"],
+"retGuarantee":"Not a forwarder",
+"comments":""
+},
+{
+"num":1040,
+"name":"unforward",
+"argGuarantees":[""],
+"retGuarantee":"Not a forwarder",
+"comments":""
+},
+{
+"num":1041,
+"name":"possibleRoot",
+"argGuarantees":["non-immediate, not a forwarder"],
+"retGuarantee":"receiver is returned (should be effect-only)",
+"comments":"If old, becomes gray and remembered to allow many unchecked stores in a row afterwards"
+},
+
+
+
+{
+"num":2000,
+"name":"smiAdd:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2001,
+"name":"smiSub:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2002,
+"name":"smiMul:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2003,
+"name":"smiDivide:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2004,
+"name":"smiDiv:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2005,
+"name":"smiMod:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+{
+"num":2006,
+"name":"smiQuo:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if one operand is a constant"
+},
+
+{
+"num":2016,
+"name":"smiBitAnd:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"optimised if one operand is a constant"
+},
+{
+"num":2017,
+"name":"smiBitOr:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"optimised if one operand is a constant"
+},
+{
+"num":2018,
+"name":"smiBitXor:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Smi",
+"comments":"optimised if one operand is a constant"
+},
+{
+"num":2019,
+"name":"smiBitShiftLeft:",
+"argGuarantees":["Smi greater or equal to 0","Smi greater or equal to 0"],
+"retGuarantee":"Smi",
+"comments":"no overflow, optimised if arg1 is a constant"
+},
+{
+"num":2020,
+"name":"smiBitShiftRight:",
+"argGuarantees":["Smi","Smi greater or equal to 0"],
+"retGuarantee":"Smi",
+"comments":"optimised if arg1 is a constant"
+},
+
+{
+"num":2032,
+"name":"smiGreater:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2033,
+"name":"smiLess:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2034,
+"name":"smiGreaterOrEqual:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2035,
+"name":"smiLessOrEqual:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2036,
+"name":"smiEquals:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2037,
+"name":"smiNotEquals:",
+"argGuarantees":["Smi","Smi"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+
+{
+"num":2038,
+"name":"rawEqualsEquals:",
+"argGuarantees":["not a forwarder","not a forwarder"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+{
+"num":2039,
+"name":"rawNotEqualsEquals:",
+"argGuarantees":["not a forwarder","not a forwarder"],
+"retGuarantee":"Boolean",
+"comments":"optimised if one operand is a constant, Pipelined with ifTrue:ifFalse:"
+},
+
+{
+"num":2048,
+"name":"rawNewColon:",
+"argGuarantees":["literal which is a variable-sized behavior","Smi"],
+"retGuarantee":"instance of receiver, fields nilled/zeroed out",
+"comments":"optimised if arg1 is a constant"
+},
+{
+"num":2049,
+"name":"rawNewColonNoInit:",
+"argGuarantees":["literal which is a variable-sized behavior","Smi"],
+"retGuarantee":"instance of receiver",
+"comments":"Fields of returned value contain undefined data, optimised if arg1 is a constant"
+},
+
+{
+"num":2064,
+"name":"pointerAt:",
+"argGuarantees":["Pointer object (Fixed sized or not) and not a context","Smi"],
+"retGuarantee":"",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":2065,
+"name":"maybeContextPointerAt:",
+"argGuarantees":["Pointer object (Fixed sized or not)","Smi"],
+"retGuarantee":"",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":2066,
+"name":"byteAt:",
+"argGuarantees":["byte object","Smi"],
+"retGuarantee":"8 bits unsigned Smi",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":2067,
+"name":"shortAt:",
+"argGuarantees":["short object","Smi"],
+"retGuarantee":"16 bits unsigned Smi",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":2068,
+"name":"wordAt:",
+"argGuarantees":["word object","Smi"],
+"retGuarantee":"32 bits unsigned Smi",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":2069,
+"name":"doubleWordAt:",
+"argGuarantees":["double word object","Smi"],
+"retGuarantee":"64 bits unsigned Smi or LargePositiveInteger",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+
+
+
+{
+"num":3000,
+"name":"pointerAt:put:",
+"argGuarantees":["Mutable pointer object (Fixed sized or not) and not a context","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3001,
+"name":"storeCheckPointerAt:put:",
+"argGuarantees":["Mutable pointer object (Fixed sized or not) and not a context","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3002,
+"name":"maybeContextPointerAt:put:",
+"argGuarantees":["Mutable pointer object (Fixed sized or not)","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3003,
+"name":"maybeContextStoreCheckPointerAt:put:",
+"argGuarantees":["Mutable pointer object (Fixed sized or not)","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3004,
+"name":"byteAt:put:",
+"argGuarantees":["Mutable byte object","Smi","8 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3005,
+"name":"shortAt:put:",
+"argGuarantees":["Mutable short object","Smi","16 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3006,
+"name":"wordAt:put:",
+"argGuarantees":["Mutable word object","Smi","32 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":3007,
+"name":"doubleWordAt:put:",
+"argGuarantees":["Mutable double word object","Smi","64 bits unsigned Smi or LargePositiveInteger"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+
+
+
+{
+"num":6000,
+"name":"backjumpNoInterrupt",
+"argGuarantees":["literal which is a Smi"],
+"comments":""
+},
+
+
+
+{
+"num":7016,
+"name":"jumpWritable:",
+"argGuarantees":["Not a forwarder", "literal which is a Smi"],
+"comments":""
+},
+{
+"num":7017,
+"name":"jumpReadOnly:",
+"argGuarantees":["Not a forwarder", "literal which is a Smi"],
+"comments":""
+},
+{
+"num":7018,
+"name":"jumpYoung:",
+"argGuarantees":["Not a forwarder", "literal which is a Smi"],
+"comments":""
+},
+{
+"num":7019,
+"name":"jumpOld:",
+"argGuarantees":["Not a forwarder", "literal which is a Smi"],
+"comments":""
+},
+
+
+
+{
+"num":8000,
+"name":"instanceOf:jumpTrue:",
+"argGuarantees":["", "literal which is a Behavior" , "literal which is a Smi"],
+"comments":""
+},
+{
+"num":8001,
+"name":"instanceOf:jumpFalse:",
+"argGuarantees":["", "literal which is a Behavior" , "literal which is a Smi"],
+"comments":""
+},
+{
+"num":8002,
+"name":"instanceOfOneOf:jumpTrue:",
+"argGuarantees":["", "Array of behaviors" , "literal which is a Smi"],
+"comments":""
+},
+{
+"num":8003,
+"name":"instanceOfOneOf:jumpFalse:",
+"argGuarantees":["", "Array of behaviors" , "literal which is a Smi"],
+"comments":""
+}
+
+],
+"mapped":[
+
+{
+"num":50,
+"name":"ensureEnoughSlots",
+"argGuarantees":["literal which is a Smi"],
+"retGuarantee":"ret value is receiver",
+"comments":""
+},
+
+
+
+{
+"num":150,
+"name":"immCheckPointerAt:put:",
+"argGuarantees":["pointer object (Fixed sized or not) and not a context","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":151,
+"name":"immCheckStoreCheckPointerAt:put:",
+"argGuarantees":["pointer object (Fixed sized or not) and not a context","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":152,
+"name":"immCheckMaybeContextPointerAt:put:",
+"argGuarantees":["pointer object (Fixed sized or not)","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant (Concept-only, contexts are mutable right now)"
+},
+{
+"num":153,
+"name":"immCheckMaybeContextStoreCheckPointerAt:put:",
+"argGuarantees":["pointer object (Fixed sized or not)","Smi",""],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant (Concept-only, contexts are mutable right now)"
+},
+{
+"num":154,
+"name":"immCheckByteAt:put:",
+"argGuarantees":["byte object","Smi","8 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":155,
+"name":"immCheckShortAt:put:",
+"argGuarantees":["short object","Smi","16 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":156,
+"name":"immCheckWordAt:put:",
+"argGuarantees":["word object","Smi","32 bits unsigned Smi"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+{
+"num":157,
+"name":"immCheckDoubleWordAt:put:",
+"argGuarantees":["double word object","Smi","64 bits unsigned Smi or LargePositiveInteger"],
+"retGuarantee":"arg2",
+"comments":"1-based, optimised if arg1 is a constant"
+},
+
+
+
+{
+"num":200,
+"name":"withArgs:executeMethod:",
+"argGuarantees":["literal index of the method to call on top of stack"],
+"retGuarantee":"",
+"comments":"variable number of parameters (on contrary to what the selector suggests, no array), the index and not the method is pushed for efficient inline caches."
+},
+
+
+
+{
+"num":250,
+"name":"backjumpAlwaysInterrupt",
+"argGuarantees":["literal which is a Smi"],
+"comments":""
+}
+
+]
+}
