@@ -1,5 +1,13 @@
 # Scorch
 
+Note: this repository has been moved from Smalltalk-hub to github March 13th 2018.
+
+For all the activity in-between Jun 2016-March 2018, check http://smalltalkhub.com/#!/~ClementBera/Scorch
+
+For all the activity in-between May 2013-Jun 2016, check http://smalltalkhub.com/#!/~mate/sista
+
+For all the activity before that, contact me.
+
 ## Introduction
 
 The main goal of the Sista VM is to add adaptive optimisations such as speculative inlining in Cog’s JIT compiler using type information present in the inline caches. Such optimisations both improve Cog’s performance and allow developers to write easy-to-read code over fast-to-execute code without performance overhead (typically, #do: is the same performance as #to:do:).
