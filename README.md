@@ -28,6 +28,18 @@ I was not involved in the project before May 2013 so I have no idea where activi
 - The most stable image version is currently Pharo 6.1
 - After loading the configuration in your image, workspaces will appear with explanation on what you can do (Similar to VMMaker workspaces)
 
+Loading scripts:
+
+wget -O- get.pharo.org/61+vm | bash
+
+./pharo-ui Pharo.image
+
+Metacello new
+        githubUser: 'clementbera' project: 'Scorch' commitish: 'master' path: 'repository';
+        baseline: 'Scorch';
+        onWarningLog;
+        load	
+
 ## Repository organization
 
 - repository includes Scorch's Smalltalk code
