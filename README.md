@@ -6,7 +6,7 @@ For all the activity in-between Jun 2016-March 2018, check http://smalltalkhub.c
 
 For all the activity in-between May 2013-Jun 2016, check http://smalltalkhub.com/#!/~mate/sista
 
-For all the activity before that, contact me.
+I was not involved in the project before May 2013 so I have no idea where activity before May 2013 is.
 
 ## Introduction
 
