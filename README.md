@@ -24,23 +24,35 @@ I was not involved in the project before May 2013 so I have no idea where activi
 
 ## Using the Sista runtime
 
-- Use a sista enabled VM (Check squeak.sista.spur & pharo.sista.spur builds on opensmalltalk-vm)
-- The most stable image version is currently Pharo 6.1
-- After loading the configuration in your image, workspaces will appear with explanation on what you can do (Similar to VMMaker workspaces)
-
 Loading scripts:
 
+```bash
 wget -O- get.pharo.org/61+vm | bash
-
 ./pharo-ui Pharo.image
+```
 
+```Smalltalk
 Metacello new
         githubUser: 'clementbera' project: 'Scorch' commitish: 'master' path: 'repository';
         baseline: 'Scorch';
         onWarningLog;
         load	
+```
+
+Notes:
+
+Use a sista enabled VM 
+- Check squeak.sista.spur & pharo.sista.spur builds on opensmalltalk-vm
+- pick a VM here: http://files.pharo.org/vm/sista
+
+The most stable image version is currently Pharo 6.1
+
+After loading the configuration in your image, workspaces will appear with explanation on what you can do (Similar to VMMaker workspaces)
 
 ## Repository organization
 
 - repository includes Scorch's Smalltalk code
 - spec includes the specification of unsafe operations in JSON format with a class to ease parsing.
+
+- Master is release branch
+- Development is my branch
