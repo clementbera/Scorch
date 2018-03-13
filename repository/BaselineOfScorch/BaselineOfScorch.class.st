@@ -12,7 +12,7 @@ BaselineOfScorch >> baseline: spec [
 	spec  
 		description: 'Baseline for Scorch, a library for runtime optimizations';
 		author: 'ClementBera';
-		postLoadDoIt: #postLoadDoIt.
+		postLoadDoIt: #postload:package:.
 	
 	spec	
 			package: 'Scorching';
