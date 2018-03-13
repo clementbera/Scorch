@@ -200,7 +200,8 @@ ConfigurationOfScorch >> baseline13: spec [
 		blessing: #baseline;
 		repository: 'github://clementbera/Scorch:master/repository';
 		description: 'Baseline for Scorch, a library for runtime optimizations';
-		author: 'ClementBera'.
+		author: 'ClementBera';
+		postLoadDoIt: #postLoadDoIt.
 	
 	spec	
 			package: 'Scorching';
@@ -210,7 +211,8 @@ ConfigurationOfScorch >> baseline13: spec [
 				spec requires: #('Scorching') ];
 			package: 'ScorchingVMTests' with: [ 
 				spec requires: #('Scorching' 'ScorchingDev') ].
-	]
+	].
+
 ]
 
 { #category : #accessing }
@@ -219,6 +221,11 @@ ConfigurationOfScorch >> customProjectAttributes [
 	For more information see: http://code.google.com/p/metacello/wiki/CustomProjectAttrributes"
 
 	^ #().
+]
+
+{ #category : #accessing }
+ConfigurationOfScorch >> postLoadDoIt [
+	SoScripts openWorkspaces
 ]
 
 { #category : #accessing }

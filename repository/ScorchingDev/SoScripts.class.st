@@ -67,25 +67,10 @@ SoScripts class >> displayClasses [
 ]
 
 { #category : #development }
-SoScripts class >> openImagePreparationWorkspace [
-	GTPlayground openContents: '
-	"Disable freetype for non freetype compatible VMs, to avoid crashes and for fast VM simulation"
-	#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
-	SessionManager default unregisterClassNamed: each  ].
-
-	"Put correct value in special object array, patch mourner bug."
-Smalltalk specialObjectsArray at: 60 put: #trapTripped .
- Smalltalk specialObjectsArray at: 59 put: nil .
- WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
-
-CompilationContext bytecodeBackend: (Smalltalk at: #OpalEncoderForSistaV1 ifAbsent: [ EncoderForSistaV1 ]) .
- CompilationContext usesFullBlockClosure: true.
- OpalCompiler recompileAll.'
-]
-
-{ #category : #development }
-SoScripts class >> openInitialWorkspace [
-	GTPlayground openContents: '
+SoScripts class >> exploreText [
+^ '
+"Make sure your image is prepared (Check image preparation workspace first)"	
+	
 "Ensure the validation works (expected failures on context access)"
 SoValidator new
 	validateMethods: (SoValidator allMethods)
@@ -108,6 +93,58 @@ Smalltalk specialObjectsArray at: 59 put: nil.
 SoValidator exPass: true.
 SoValidator exPass: false.
 SoValidator timeout: 1000.' 
+]
+
+{ #category : #development }
+SoScripts class >> imagePreparationText [
+^ '
+"Disable freetype for non freetype compatible VMs, to avoid crashes and for fast VM simulation"
+#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
+SessionManager default unregisterClassNamed: each  ].
+
+"Put correct value in special object array, patch mourner bug."
+Smalltalk specialObjectsArray at: 60 put: #trapTripped .
+Smalltalk specialObjectsArray at: 59 put: nil .
+WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
+
+CompilationContext bytecodeBackend: (Smalltalk at: #OpalEncoderForSistaV1 ifAbsent: [ EncoderForSistaV1 ]) .
+CompilationContext usesFullBlockClosure: true.
+OpalCompiler recompileAll.' 
+]
+
+{ #category : #development }
+SoScripts class >> openInitialWorkspace [
+	self openWorkspace: '
+"Make sure your image is prepared (Check image preparation workspace first)"	
+	
+"Ensure the validation works (expected failures on context access)"
+SoValidator new
+	validateMethods: (SoValidator allMethods)
+	passes: { {#optimizeCodeNode} }
+	options: #(finalGraphSanity reportToTranscript ) .
+
+"Script to recover the systems" 
+CompiledMethod allInstances do: [ :each | (each isOptimized and: [ each metadata isCustomized ifNil: [ false ] ]) ifTrue: [ SoDependencyMap default uninstallMethod: each ]  ].
+SoDependencyMap default debugFlushAll. 
+
+"Enable runtime optimizations"
+Smalltalk specialObjectsArray at: 59 put: #conditionalBranchCounterTrippedOn:.
+"Run bench, open transcript or command line for logs"
+[ 38 benchFib ] timeToRun logCr.
+[ShootoutTests binarytrees: 17 to: DummyStream basicNew ] timeToRun logCr.
+"Disable runtime optimization"
+Smalltalk specialObjectsArray at: 59 put: nil.
+
+"Other scripts for tests and validation"
+SoValidator exPass: true.
+SoValidator exPass: false.
+SoValidator timeout: 1000.' title: 'Exploring Scorch'
+]
+
+{ #category : #development }
+SoScripts class >> openWorkspaces [
+	GTPlayground openContents: self exploreText label: 'Explore Scorch'.
+	GTPlayground openContents: self imagePreparationText label: 'Image Preparation'
 ]
 
 { #category : #utils }
