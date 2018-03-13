@@ -12,10 +12,12 @@ SoSmiBitAndOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiBitAndOp >> primitiveNumber [
-	^ 2016
+	<script>
+	^ USmiBitAnd
 ]
 
 { #category : #primitive }
 SoSmiBitAndOp >> safePrimitiveNumber [
-	^ 14
+	<script>
+	^ BitAnd
 ]

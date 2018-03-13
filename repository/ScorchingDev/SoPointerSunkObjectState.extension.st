@@ -8,5 +8,6 @@ SoPointerSunkObjectState class >> nodesWithDef [
 
 { #category : #'*ScorchingDev' }
 SoPointerSunkObjectState >> printOn: s [
-	s << 'Sunk ' << theClass name << '(' << marker printString << ')'.  
+	s << 'Sunk ' << theClass name << ' in '.
+	node printOn: s.
 ]

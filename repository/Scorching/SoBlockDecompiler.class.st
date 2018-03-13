@@ -90,7 +90,7 @@ SoBlockDecompiler >> nonLocalPhi: aValue [
 { #category : #'sunk objects' }
 SoBlockDecompiler >> recordSunkContext: node [
 	super recordSunkContext: node.
-	node deoptInfo addSunkObject: sunkClosure.
+	node deoptInfo addSunkObject: sunkClosure copy.
 ]
 
 { #category : #initialization }
@@ -98,6 +98,7 @@ SoBlockDecompiler >> setUpWithInliner: inliner [
 	super setUpWithInliner: inliner.
 	copiedValues := inliner copiedValues.
 	nonLocalPhi := inliner closure nlrPhi.
+	nonLocalPhi ifNotNil: [ nonLocalPhi removeInput: inliner closure fakeConstant basicBlock: inliner closure fakeBasicBlock ].
 	sunkClosure := inliner sunkClosure
 ]
 

@@ -90,7 +90,7 @@ SoAccessorGenerator >> generateSetter: varName class: aClass [
 	s << varName << ': aValue' .
 	self maybeAddPragma: s.
 	varName = #deoptInfo ifTrue: [ 
-		s << String cr << String tab << 'aValue ifNotNil: [aValue instruction: self].' ].
+		s << String cr << String tab << 'aValue ifNotNil: [aValue sunkObjects do: [ :sunkObj | sunkObj node: self ] ].' ].
 	s << String cr << String tab << varName << ' := aValue'.
 	aClass compile: s contents classified: #accessing
 ]

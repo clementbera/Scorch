@@ -56,7 +56,7 @@ SoPi >> hasRangeInformation [
 ]
 
 { #category : #testing }
-SoPi >> isIteratorMutator: phi [
+SoPi >> isIteratorMutator [
 	^ true
 ]
 
@@ -71,13 +71,8 @@ SoPi >> isTraversedBy: aTraverser [
 	^ aTraverser traversePi: self
 ]
 
-{ #category : #accessing }
-SoPi >> iteratorMutatorValue: phi [
-	^ 0
-]
-
 { #category : #types }
-SoPi >> nextIterator: phi [
+SoPi >> nextIterator [
 	^ expression
 ]
 
@@ -92,25 +87,4 @@ SoPi >> rangeInformation [
 SoPi >> subNodes [
 	<generated>
 	^ {expression}
-]
-
-{ #category : #'graph edition' }
-SoPi >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	^aBlock value: expression.
-	
-]
-
-{ #category : #'graph edition' }
-SoPi >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: expression
-]
-
-{ #category : #'graph edition' }
-SoPi >> subNodesSize [
-	<generated>
-	^ 1
 ]

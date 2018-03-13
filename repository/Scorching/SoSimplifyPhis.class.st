@@ -34,29 +34,6 @@ SoSimplifyPhis >> check1InputPhi: phi [
 ]
 
 { #category : #private }
-SoSimplifyPhis >> checkLoopPhi: phi [
-	"Sometimes in loop there are complicated control flows, 
-	 leading many phis to be unused but interdependent. Remove them.
-	 This cannot happen in non loops since the last phi would be unused."
-	| phisToRemove localWorkList localPhi dummyValue |
-	phi isLoopPhi ifFalse: [ ^ self ].
-	phisToRemove := OrderedCollection new.
-	localWorkList := OrderedCollection with: phi.
-	[ localWorkList isEmpty ] whileFalse: [ 
-		localPhi := localWorkList removeLast.
-		(phisToRemove includes: localPhi) ifFalse: [ 
-			phisToRemove add: localPhi.
-			localPhi uses do: [:use | 
-				use isPhiInput ifFalse: [ ^ self ].
-				localWorkList add: use phi ] ] ].
-	workList := workList reject: [:p | phisToRemove includes: p ].
-	dummyValue := SoConstant new.
-	phisToRemove do: [ :each | each removeAndReplaceUsesBy: dummyValue ].
-	
-	
-]
-
-{ #category : #private }
 SoSimplifyPhis >> checkPhiFunction: phi [
 
 	| inputsSize |
@@ -69,7 +46,7 @@ SoSimplifyPhis >> checkPhiFunction: phi [
 { #category : #private }
 SoSimplifyPhis >> checkRedondantInput: phi [
 	"Redondant phi in loops, the input is incoming from before the loop and the other input is itself."
-	(phi inputs anySatisfy: [ :input | input == phi ]) ifFalse: [ ^ self checkLoopPhi: phi ].
+	(phi inputs anySatisfy: [ :input | input == phi ]) ifFalse: [ ^ self ].
 	self addToWorkList: phi uses ifNotPhi: phi.
 	phi inputs
 		detect: [ :input | input ~~ phi ]

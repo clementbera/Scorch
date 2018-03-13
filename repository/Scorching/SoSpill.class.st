@@ -9,6 +9,42 @@ Class {
 }
 
 { #category : #'bytecode generation' }
+SoSpill >> genClassOp: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genClassOpReference: node with: builder [
+	<script>
+	builder genClassOp: node
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genContextInstVarRead: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genContextInstVarReadReference: node with: builder [
+	<script>
+	builder genPushContextInstVar: node
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genCreateArray: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genCreateArrayReference: node with: builder [
+	<script>
+	builder genCreateArray: node
+]
+
+{ #category : #'bytecode generation' }
 SoSpill >> genCreateContextFullBlock: node with: builder [
 	<script>
 	"gen on reference"
@@ -33,13 +69,39 @@ SoSpill >> genCreateFullBlockReference: node with: builder [
 ]
 
 { #category : #'bytecode generation' }
-SoSpill >> genInstantiation: node with: builder [
-	
+SoSpill >> genCreateTempVect: node with: builder [
+	<script>
+	"gen on reference"
 ]
 
 { #category : #'bytecode generation' }
-SoSpill >> genInstantiationReference: node with: builder [
-	builder genInstantiation: node
+SoSpill >> genCreateTempVectReference: node with: builder [
+	<script>
+	builder genCreateTempVect: node
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genGlobalRead: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genGlobalReadReference: node with: builder [
+	<script>
+	builder genPushGlobal: node
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genInstVarRead: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genInstVarReadReference: node with: builder [
+	<script>
+	builder genPushInstVar: node
 ]
 
 { #category : #'bytecode generation' }
@@ -73,6 +135,30 @@ SoSpill >> genPhi: node with: builder [
 { #category : #'bytecode generation' }
 SoSpill >> genPhiReference: node with: builder [
 	"inputs should be on stack"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genPointerEqualsOp: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genPointerEqualsOpReference: node with: builder [
+	<script>
+	builder genPointerEqualsOp: node
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genRemoteTempRead: node with: builder [
+	<script>
+	"gen on reference"
+]
+
+{ #category : #'bytecode generation' }
+SoSpill >> genRemoteTempReadReference: node with: builder [
+	<script>
+	builder genPushRemoteTemp: node
 ]
 
 { #category : #'bytecode generation' }

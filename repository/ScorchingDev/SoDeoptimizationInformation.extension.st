@@ -10,18 +10,3 @@ SoDeoptimizationInformation >> asDebugStack [
 		ctxt := self sunkObjects detect: [ :sunk | sunk marker == ctxt fixedFields first ] ifNone: [ ] ].
 	^ stack
 ]
-
-{ #category : #'*ScorchingDev' }
-SoDeoptimizationInformation >> gtInspectorViewIn: composite [
-	<gtInspectorPresentationOrder: 15> 
-	composite tree  
-		rootsExpanded;
-		title: 'SunkObj'; "Instructions"
-		children: [:each |
-			each = self 
-				ifTrue: [ self sunkObjects ]
-				ifFalse: [ 
-					each class = SoPointerSunkObjectState 
-						ifTrue: [ each fixedFields , { '--'} , each variableFields ]
-						ifFalse: [ #() ] ] ]
-]

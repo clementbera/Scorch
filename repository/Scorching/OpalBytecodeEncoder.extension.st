@@ -15,9 +15,3 @@ OpalBytecodeEncoder >> sizeBranchIfInstanceOf: behaviors distance: distance [
 OpalBytecodeEncoder >> sizeBranchIfNotInstanceOf: behaviors distance: distance [
 	^self sizeOpcodeSelector: #genBranchIfNotInstanceOf:distance: withArguments: {behaviors.distance}
 ]
-
-{ #category : #'*Scorching' }
-OpalBytecodeEncoder >> sizePushInteger: integer [ 
-	^self sizeOpcodeSelector: #genPushInteger: withArguments: {integer}
-	
-]

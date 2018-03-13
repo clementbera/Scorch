@@ -25,7 +25,7 @@ Aggressive removal:
 "
 Class {
 	#name : #SoStringEqualStub,
-	#superclass : #Object,
+	#superclass : #SoStub,
 	#instVars : [
 		'stringCmp',
 		'trapInstr',
@@ -33,20 +33,8 @@ Class {
 		'exactSize',
 		'anySize'
 	],
-	#category : #'Scorching-Pass-Data'
+	#category : #'Scorching-Pass-Stub'
 }
-
-{ #category : #accessing }
-SoStringEqualStub >> anySize [
-	<generated>
-	^ anySize
-]
-
-{ #category : #accessing }
-SoStringEqualStub >> anySize: aValue [
-	<generated>
-	anySize := aValue
-]
 
 { #category : #testing }
 SoStringEqualStub >> bothOperandsSameSize [
@@ -64,15 +52,6 @@ SoStringEqualStub >> bothOperandsSameSize [
 	^ self sizeOf: op1 matchesSizeOf: op2
 	
 	
-]
-
-{ #category : #testing }
-SoStringEqualStub >> checkOrder: instr [ 
-	instr isRead ifFalse: [ ^ false].
-	(instr index isConstant and: [ instr index constant = 2 ]) ifFalse: [ ^ false].
-	instr object class == SoUnforwardNonImmediate ifFalse: [ ^ false ].
-	instr object expression class == SoMutableLiteralRead ifFalse: [ ^ false ].
-	^ instr object expression literal == (String classVariableNamed: #AsciiOrder)
 ]
 
 { #category : #accessing }
@@ -108,14 +87,12 @@ SoStringEqualStub >> isBytes: arg [
 	^ type behaviors allSatisfy: [ :each | each instSpec = 16 ]
 ]
 
-{ #category : #debug }
-SoStringEqualStub >> logDebug: msg class: cls at: instruction [
-	| theClass |
-	theClass := Smalltalk globals at: cls ifAbsent: [ ^ self ].
-	instruction codeNode debugInfo add: ((Smalltalk globals at: cls) new 
-		message: msg;
-		stackOrNil: (instruction deoptInfo ifNotNil: [ :d | d asDebugStack ]);
-		yourself) 
+{ #category : #testing }
+SoStringEqualStub >> isGloballyOrdered: byteArray [
+	self flag: #TODO. "Hack. test against ASCII order. We should test if globally order quickly enough..."
+	1 to: byteArray size do: [ :i |
+		(byteArray at: i) ~= (i - 1) ifTrue: [ ^ false ] ].
+	^ true
 ]
 
 { #category : #testing }
@@ -129,9 +106,10 @@ SoStringEqualStub >> matchesStringEqualPattern [
 	equal2Instr := trapInstr nextInstr.
 	(stringCmp uses includes: trapInstr) ifFalse: [ ^ false ].
 	(stringCmp uses includes: equal2Instr) ifFalse: [ ^ false ].
-	(stringCmp uses anySatisfy: [ :use | use isSunkObject and: [trapInstr deoptInfo sunkObjects includes: use]]) ifFalse: [ ^ false ].
+	(stringCmp uses anySatisfy: [ :use | use isSunkObject and: [use node = trapInstr]]) ifFalse: [ ^ false ].
 	(equal2Instr firstArg isConstant and: [ equal2Instr firstArg constant = 2 ]) ifFalse: [ ^ false ].
-	(self checkOrder: stringCmp arguments last) ifFalse: [ ^ false ].
+	stringCmp arguments last isGlobal ifFalse: [ ^ false ].
+	(self isGloballyOrdered: stringCmp arguments last assoc value) ifFalse: [ ^ false ].
 	(self isBytes: stringCmp firstArg) ifFalse: [ ^ false ].
 	(self isBytes: stringCmp arguments second) ifFalse: [ ^ false ].
 	^ true
@@ -157,7 +135,6 @@ SoStringEqualStub >> newByteStringTrapFor: node [
 
 { #category : #rewrite }
 SoStringEqualStub >> rewriteStringEqual [
-	self logDebug: exactSize printString class: #SoStringEqLog at: equal2Instr.
 	^ exactSize
 		ifNotNil: [ self rewriteStringEqualExactSize ]
 		ifNil: [ self rewriteStringEqualAnySize ]
@@ -179,6 +156,7 @@ SoStringEqualStub >> rewriteStringEqualAnySize [
 	equal2Instr removeAndReplaceUsesBy: byteEqual.
 	stringCmp removeInstr.
 
+	{ byteEqual "other instr we may add..." } do: [ :i | i isTraversedBy: SoGVN new ]
 ]
 
 { #category : #rewrite }
@@ -197,6 +175,7 @@ SoStringEqualStub >> rewriteStringEqualExactSize [
 	equal2Instr removeAndReplaceUsesBy: byteEqual.
 	stringCmp removeInstr.
 
+	{ byteEqual "other instr we may add..." } do: [ :i | i isTraversedBy: SoGVN new ]
 ]
 
 { #category : #testing }
@@ -205,7 +184,7 @@ SoStringEqualStub >> sizeOf: op matchesConstant: int [
 	| sizeOps equals branches |
 	sizeOps := op uses select: [ :use | use isSizeOp ].
 	equals := sizeOps flatCollect: [ :each | each uses select: [ :use | use class = SoSmiEqualOp ] ].
-	equals := equals select: [ :each | each subNodesAnySatisfy: [ :sub | sub isConstant and: [ sub constant = int ] ] ].
+	equals := equals select: [ :each | each subNodes anySatisfy: [ :sub | sub isConstant and: [ sub constant = int ] ] ].
 	branches := equals flatCollect: [ :each | each uses select: [ :use | use isBooleanBranch ] ].
 	^ branches anySatisfy: [ :each | each trueBasicBlock dominatesInstr: stringCmp]
 ]

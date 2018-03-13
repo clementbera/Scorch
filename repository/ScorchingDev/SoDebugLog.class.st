@@ -3,7 +3,8 @@ Class {
 	#superclass : #Object,
 	#instVars : [
 		'message',
-		'stackOrNil'
+		'stackOrNil',
+		'num'
 	],
 	#category : #'ScorchingDev-debug'
 }
@@ -32,11 +33,6 @@ SoDebugLog >> crTabPrintOn: stream [
 	self printOn: stream
 ]
 
-{ #category : #testing }
-SoDebugLog >> isInliningLog [
-	^ false
-]
-
 { #category : #accessing }
 SoDebugLog >> message [
 	^ message
@@ -45,6 +41,16 @@ SoDebugLog >> message [
 { #category : #accessing }
 SoDebugLog >> message: anObject [
 	message := anObject
+]
+
+{ #category : #accessing }
+SoDebugLog >> num [
+	^ num
+]
+
+{ #category : #accessing }
+SoDebugLog >> num: anObject [
+	num := anObject
 ]
 
 { #category : #comparing }
@@ -60,6 +66,9 @@ SoDebugLog >> printOn: stream [
 	stackOrNil first value printOn: stream.
 	stream  << ') '.
 	self basicPrintOn: stream.
+	stream << ' ['.
+	num printOn: stream.
+	stream << ']'
 ]
 
 { #category : #accessing }

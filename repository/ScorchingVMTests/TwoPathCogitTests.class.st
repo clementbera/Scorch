@@ -7,7 +7,7 @@ Class {
 	#instVars : [
 		'guineaPig'
 	],
-	#category : #'ScorchingVMTests-TwoPaths'
+	#category : #ScorchingVMTests
 }
 
 { #category : #'guinea pigs' }

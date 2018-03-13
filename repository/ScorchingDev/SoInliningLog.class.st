@@ -8,8 +8,3 @@ Class {
 SoInliningLog >> basicPrintOn: stream [
 	stream << message
 ]
-
-{ #category : #testing }
-SoInliningLog >> isInliningLog [
-	^ true
-]

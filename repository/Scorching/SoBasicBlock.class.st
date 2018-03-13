@@ -167,7 +167,7 @@ SoBasicBlock >> instructionsDo: aBlock [
 	| instr |
 	instr := firstInstr.
 	[ aBlock value: instr.
-	instr isNil or: [instr isCFGInstr ]]
+	instr isCFGInstr ]
 		whileFalse: [ instr := instr nextInstr ]
 ]
 
@@ -216,17 +216,6 @@ SoBasicBlock >> phisDo: aBlock [
 		instr := instr nextInstr ]
 ]
 
-{ #category : #enumerating }
-SoBasicBlock >> pisDo: aBlock [ 
-	"Iterates over the pis of the basicBlocks from the first pi to the last pi in scheduling order.. 
-	Assumes the pis are the first instructions of the basicBlock"
-	| instr |
-	instr := firstInstr.
-	[ instr notNil and: [ instr isPi ] ] whileTrue: [ 
-		aBlock value: instr.
-		instr := instr nextInstr ]
-]
-
 { #category : #accessing }
 SoBasicBlock >> postOrder [
 	<generated>
@@ -258,11 +247,10 @@ SoBasicBlock >> removePredecessor: pred [
 
 { #category : #dominator }
 SoBasicBlock >> strictlyDominates: basicBlock [ 
-	"== nil for better branch prediction in the JIT - profiler"
 	| dom |
 	dom := basicBlock dominator.
 	[ dom = self ifTrue: [ ^ true ].
-	dom == nil ] whileFalse: [ dom := dom dominator ].
+	dom isNil ] whileFalse: [ dom := dom dominator ].
 	^ false
 ]
 

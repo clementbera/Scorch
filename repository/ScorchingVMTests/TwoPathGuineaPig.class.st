@@ -9,7 +9,7 @@ Class {
 		'iv2',
 		'iv3'
 	],
-	#category : #'ScorchingVMTests-TwoPaths'
+	#category : #ScorchingVMTests
 }
 
 { #category : #'as yet unclassified' }

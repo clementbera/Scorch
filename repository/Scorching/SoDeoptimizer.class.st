@@ -11,6 +11,9 @@ Class {
 		'deoptObjects',
 		'optimizedContext'
 	],
+	#classVars : [
+		'RES'
+	],
 	#pools : [
 		'SoMagicConstants'
 	],
@@ -55,7 +58,7 @@ SoDeoptimizer >> deadOuterContextMarker [
 { #category : #'stack deoptimization' }
 SoDeoptimizer >> debugLog: deoptPoint [
 	[ | debug |
-	debug := '(' , optimizedContext method printString , ' => ' , (deoptPoint first fixedFields at: 4) constant printString , ' ;' , (deoptPoint first fixedFields at: 2) constant printString , ')'.
+	debug := '(' , (deoptPoint first fixedFields at: 4) constant printString , ' ;' , (deoptPoint first fixedFields at: 2) constant printString , ')'.
 	debug logCr.
 	FileStream stdout << debug; cr ] on: Error do: [ 'err' logCr. FileStream stdout << 'err'. ].
 ]
@@ -80,7 +83,7 @@ SoDeoptimizer >> deoptPointForContext: context [
 	isDiscarded ifTrue: [ FileStream stdout << 'Discarded deopt'. Transcript << 'Discarded deopt' ].
 	deopt := context method metadata deoptPointAt: context pc - isDiscarded asBit code: context method.
 	deopt ifNotNil: [ ^ deopt ].
-	self error: 'no deopt point at current location: ' , context pc printString
+	self error: 'no deopt point at current location.'
 ]
 
 { #category : #public }

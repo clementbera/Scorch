@@ -12,10 +12,14 @@ Class {
 }
 
 { #category : #utils }
+SoGraphTraverser >> branchesToReprocess [
+	self subclassResponsibility 
+]
+
+{ #category : #utils }
 SoGraphTraverser >> dominatedPath: basicBlock [
-	"Answers a list of basicBlocks dominated by the given basicBlock."
 	| result workList bb |
-	result := Set with: basicBlock.
+	result := OrderedCollection with: basicBlock.
 	workList := basicBlock successors asOrderedCollection.
 	[ workList isEmpty ] whileFalse: 
 		[ bb := workList removeFirst.
@@ -27,19 +31,39 @@ SoGraphTraverser >> dominatedPath: basicBlock [
 ]
 
 { #category : #utils }
-SoGraphTraverser >> logDebug: msg class: cls at: instruction [
-	| theClass |
-	theClass := Smalltalk globals at: cls ifAbsent: [ ^ self ].
-	instruction codeNode debugInfo add: ((Smalltalk globals at: cls) new 
-		message: msg;
-		stackOrNil: (instruction deoptInfo ifNotNil: [ :d | d asDebugStack ]);
-		yourself) 
+SoGraphTraverser >> replaceCompOp: op withBool: bool [ 
+	
+	self branchesToReprocess addAll: (op uses select: [ :each | each isBooleanBranch ]).
+	op removeAndReplaceUsesBy: (SoConstant new constant: bool; yourself).
+]
+
+{ #category : #utils }
+SoGraphTraverser >> reprocessBranches [
+	SoDeadBranchElimination new processBranches: self branchesToReprocess
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseAccessingOp: anAccessingOp [
+	<generated>
+	^ self traverseUnsafeOp: anAccessingOp
 ]
 
 { #category : #traversing }
 SoGraphTraverser >> traverseArg: anArg [
 	<generated>
 	^ self traverseImmediateUses: anArg
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseArrayCopyOp: anArrayCopyOp [
+	<generated>
+	^ self traverseUnsafeOp: anArrayCopyOp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseBackjump: aBackjump [
+	<generated>
+	^ self traverseUnconditionalJump: aBackjump
 ]
 
 { #category : #public }
@@ -49,15 +73,15 @@ SoGraphTraverser >> traverseBackwardBasicBlock: basicBlock [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseBehaviorIdentityHashOp: aBehaviorIdentityHashOp [
-	<generated>
-	^ self traverseHashOp: aBehaviorIdentityHashOp
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseBodyInstruction: aBodyInstruction [
 	<generated>
 	
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseBooleanBranch: aBooleanBranch [
+	<generated>
+	^ self traverseBranch: aBooleanBranch
 ]
 
 { #category : #traversing }
@@ -67,21 +91,33 @@ SoGraphTraverser >> traverseBranch: aBranch [
 ]
 
 { #category : #traversing }
+SoGraphTraverser >> traverseBranchIfNotInstanceOf: aBranchIfNotInstanceOf [
+	<generated>
+	^ self traverseBranch: aBranchIfNotInstanceOf
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseByteAtOp: aByteAtOp [
+	<generated>
+	^ self traverseAccessingOp: aByteAtOp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseByteAtPutOp: aByteAtPutOp [
+	<generated>
+	^ self traverseAccessingOp: aByteAtPutOp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseByteEqual: aByteEqual [
+	<generated>
+	^ self traverseUnsafeOp: aByteEqual
+]
+
+{ #category : #traversing }
 SoGraphTraverser >> traverseByteEqualOp: aByteEqualOp [
 	<generated>
 	^ self traverseUnsafeOp: aByteEqualOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseByteNewColon: aByteNewColon [
-	<generated>
-	^ self traverseNewColon: aByteNewColon
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseByteRead: aByteRead [
-	<generated>
-	^ self traverseObjectRead: aByteRead
 ]
 
 { #category : #traversing }
@@ -91,21 +127,9 @@ SoGraphTraverser >> traverseByteSizeOp: aByteSizeOp [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseByteWrite: aByteWrite [
-	<generated>
-	^ self traverseObjectWrite: aByteWrite
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseCFGInstruction: aCFGInstruction [
 	<generated>
 	
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseCall: aCall [
-	<generated>
-	^ self traverseOp: aCall
 ]
 
 { #category : #traversing }
@@ -115,9 +139,9 @@ SoGraphTraverser >> traverseCharacterAsIntegerOp: aCharacterAsIntegerOp [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseCharacterIdentityHashOp: aCharacterIdentityHashOp [
+SoGraphTraverser >> traverseClassOp: aClassOp [
 	<generated>
-	^ self traverseHashOp: aCharacterIdentityHashOp
+	^ self traverseUnsafeOp: aClassOp
 ]
 
 { #category : #traversing }
@@ -127,9 +151,21 @@ SoGraphTraverser >> traverseConstant: aConstant [
 ]
 
 { #category : #traversing }
+SoGraphTraverser >> traverseContextInstVar: aContextInstVar [
+	<generated>
+	^ self traverseInstVar: aContextInstVar
+]
+
+{ #category : #traversing }
 SoGraphTraverser >> traverseCopiedTemp: aCopiedTemp [
 	<generated>
 	^ self traverseImmediateUses: aCopiedTemp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseCreateArray: aCreateArray [
+	<generated>
+	^ self traverseBodyInstruction: aCreateArray
 ]
 
 { #category : #traversing }
@@ -151,21 +187,21 @@ SoGraphTraverser >> traverseCreateNLRFullBlock: aCreateNLRFullBlock [
 ]
 
 { #category : #traversing }
+SoGraphTraverser >> traverseCreateTempVect: aCreateTempVect [
+	<generated>
+	^ self traverseBodyInstruction: aCreateTempVect
+]
+
+{ #category : #traversing }
 SoGraphTraverser >> traverseDeoptImmediate: aDeoptImmediate [
 	<generated>
 	^ self traverseImmediate: aDeoptImmediate
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseDirectCall: aDirectCall [
+SoGraphTraverser >> traverseEnsureEnoughSpace: anEnsureEnoughSpace [
 	<generated>
-	^ self traverseCall: aDirectCall
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseEnsureEnoughSlots: anEnsureEnoughSlots [
-	<generated>
-	^ self traverseBodyInstruction: anEnsureEnoughSlots
+	^ self traverseBodyInstruction: anEnsureEnoughSpace
 ]
 
 { #category : #public }
@@ -175,9 +211,27 @@ SoGraphTraverser >> traverseForwardBasicBlock: basicBlock [
 ]
 
 { #category : #traversing }
+SoGraphTraverser >> traverseGlobal: aGlobal [
+	<generated>
+	^ self traverseHeapAccess: aGlobal
+]
+
+{ #category : #traversing }
 SoGraphTraverser >> traverseHashOp: aHashOp [
 	<generated>
 	^ self traverseUnsafeOp: aHashOp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseHeapAccess: aHeapAccess [
+	<generated>
+	^ self traverseBodyInstruction: aHeapAccess
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseIdentityHashOp: anIdentityHashOp [
+	<generated>
+	^ self traverseHashOp: anIdentityHashOp
 ]
 
 { #category : #traversing }
@@ -205,15 +259,15 @@ SoGraphTraverser >> traverseImmediateUses: anImmediateUses [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseInstanceOfBranch: anInstanceOfBranch [
+SoGraphTraverser >> traverseInstVar: anInstVar [
 	<generated>
-	^ self traverseBranch: anInstanceOfBranch
+	^ self traverseHeapAccess: anInstVar
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseInstantiation: anInstantiation [
+SoGraphTraverser >> traverseInstantiationOp: anInstantiationOp [
 	<generated>
-	^ self traverseBodyInstruction: anInstantiation
+	^ self traverseUnsafeOp: anInstantiationOp
 ]
 
 { #category : #public }
@@ -240,57 +294,15 @@ SoGraphTraverser >> traverseLoopHead: aLoopHead [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseMaybeContextPointerRead: aMaybeContextPointerRead [
+SoGraphTraverser >> traverseMutableLiteral: aMutableLiteral [
 	<generated>
-	^ self traversePointerRead: aMaybeContextPointerRead
+	^ self traverseHeapAccess: aMutableLiteral
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseMaybeContextPointerWrite: aMaybeContextPointerWrite [
+SoGraphTraverser >> traverseNewOp: aNewOp [
 	<generated>
-	^ self traversePointerWrite: aMaybeContextPointerWrite
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseMutableLiteralRead: aMutableLiteralRead [
-	<generated>
-	^ self traverseBodyInstruction: aMutableLiteralRead
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseNewColon: aNewColon [
-	<generated>
-	^ self traverseInstantiation: aNewColon
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseNoInterruptBackjump: aNoInterruptBackjump [
-	<generated>
-	^ self traverseUnconditionalJump: aNoInterruptBackjump
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseObjectAccess: anObjectAccess [
-	<generated>
-	^ self traverseBodyInstruction: anObjectAccess
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseObjectIdentityHashOp: anObjectIdentityHashOp [
-	<generated>
-	^ self traverseHashOp: anObjectIdentityHashOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseObjectRead: anObjectRead [
-	<generated>
-	^ self traverseObjectAccess: anObjectRead
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseObjectWrite: anObjectWrite [
-	<generated>
-	^ self traverseObjectAccess: anObjectWrite
+	^ self traverseInstantiationOp: aNewOp
 ]
 
 { #category : #traversing }
@@ -318,9 +330,15 @@ SoGraphTraverser >> traversePi: aPi [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traversePipelinedBooleanBranch: aPipelinedBooleanBranch [
+SoGraphTraverser >> traversePointerAtOp: aPointerAtOp [
 	<generated>
-	^ self traverseBranch: aPipelinedBooleanBranch
+	^ self traverseAccessingOp: aPointerAtOp
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traversePointerAtPutOp: aPointerAtPutOp [
+	<generated>
+	^ self traverseAccessingOp: aPointerAtPutOp
 ]
 
 { #category : #traversing }
@@ -330,39 +348,9 @@ SoGraphTraverser >> traversePointerEqualsOp: aPointerEqualsOp [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traversePointerNew: aPointerNew [
-	<generated>
-	^ self traverseInstantiation: aPointerNew
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traversePointerNewColon: aPointerNewColon [
-	<generated>
-	^ self traverseNewColon: aPointerNewColon
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traversePointerRead: aPointerRead [
-	<generated>
-	^ self traverseObjectRead: aPointerRead
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traversePointerSizeOp: aPointerSizeOp [
 	<generated>
 	^ self traverseSizeOp: aPointerSizeOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traversePointerWrite: aPointerWrite [
-	<generated>
-	^ self traverseObjectWrite: aPointerWrite
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traversePossibleRoot: aPossibleRoot [
-	<generated>
-	^ self traverseBodyInstruction: aPossibleRoot
 ]
 
 { #category : #public }
@@ -378,45 +366,15 @@ SoGraphTraverser >> traversePreorderCode: code [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseRawClassOp: aRawClassOp [
-	<generated>
-	^ self traverseUnsafeOp: aRawClassOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseRawPointerEqualsOp: aRawPointerEqualsOp [
-	<generated>
-	^ self traversePointerEqualsOp: aRawPointerEqualsOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseRawPointerNotEqualsOp: aRawPointerNotEqualsOp [
-	<generated>
-	^ self traversePointerEqualsOp: aRawPointerNotEqualsOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseReadOnlyBranch: aReadOnlyBranch [
-	<generated>
-	^ self traverseBranch: aReadOnlyBranch
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseReadOnlyCheckByteWrite: aReadOnlyCheckByteWrite [
-	<generated>
-	^ self traverseByteWrite: aReadOnlyCheckByteWrite
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseReadOnlyCheckPointerWrite: aReadOnlyCheckPointerWrite [
-	<generated>
-	^ self traversePointerWrite: aReadOnlyCheckPointerWrite
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseReceiver: aReceiver [
 	<generated>
 	^ self traverseImmediateUses: aReceiver
+]
+
+{ #category : #traversing }
+SoGraphTraverser >> traverseRemoteTemp: aRemoteTemp [
+	<generated>
+	^ self traverseHeapAccess: aRemoteTemp
 ]
 
 { #category : #traversing }
@@ -428,37 +386,13 @@ SoGraphTraverser >> traverseReturn: aReturn [
 { #category : #traversing }
 SoGraphTraverser >> traverseSend: aSend [
 	<generated>
-	^ self traverseCall: aSend
+	^ self traverseOp: aSend
 ]
 
 { #category : #traversing }
 SoGraphTraverser >> traverseSizeOp: aSizeOp [
 	<generated>
 	^ self traverseUnsafeOp: aSizeOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmallFloatAsIntegerOp: aSmallFloatAsIntegerOp [
-	<generated>
-	^ self traverseImmediateAsIntegerOp: aSmallFloatAsIntegerOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmallFloatIdentityHashOp: aSmallFloatIdentityHashOp [
-	<generated>
-	^ self traverseHashOp: aSmallFloatIdentityHashOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmalltalkBackjump: aSmalltalkBackjump [
-	<generated>
-	^ self traverseNoInterruptBackjump: aSmalltalkBackjump
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmalltalkBooleanBranch: aSmalltalkBooleanBranch [
-	<generated>
-	^ self traversePipelinedBooleanBranch: aSmalltalkBooleanBranch
 ]
 
 { #category : #traversing }
@@ -522,12 +456,6 @@ SoGraphTraverser >> traverseSmiCompOp: aSmiCompOp [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseSmiDivOp: aSmiDivOp [
-	<generated>
-	^ self traverseSmiArithmeticOp: aSmiDivOp
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseSmiEqualOp: aSmiEqualOp [
 	<generated>
 	^ self traverseSmiCompOp: aSmiEqualOp
@@ -546,18 +474,6 @@ SoGraphTraverser >> traverseSmiLessOrEqualOp: aSmiLessOrEqualOp [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseSmiModOp: aSmiModOp [
-	<generated>
-	^ self traverseSmiArithmeticOp: aSmiModOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmiMulOp: aSmiMulOp [
-	<generated>
-	^ self traverseSmiArithmeticOp: aSmiMulOp
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseSmiNotEqualOp: aSmiNotEqualOp [
 	<generated>
 	^ self traverseSmiCompOp: aSmiNotEqualOp
@@ -567,12 +483,6 @@ SoGraphTraverser >> traverseSmiNotEqualOp: aSmiNotEqualOp [
 SoGraphTraverser >> traverseSmiOp: aSmiOp [
 	<generated>
 	^ self traverseUnsafeOp: aSmiOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseSmiQuoOp: aSmiQuoOp [
-	<generated>
-	^ self traverseSmiArithmeticOp: aSmiQuoOp
 ]
 
 { #category : #traversing }
@@ -588,21 +498,9 @@ SoGraphTraverser >> traverseThisClosure: aThisClosure [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseTrapIf: aTrapIf [
-	<generated>
-	^ self traverseBodyInstruction: aTrapIf
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseTrapIfNotInstanceOf: aTrapIfNotInstanceOf [
 	<generated>
-	^ self traverseTrapIf: aTrapIfNotInstanceOf
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseTrapIfReadOnly: aTrapIfReadOnly [
-	<generated>
-	^ self traverseTrapIf: aTrapIfReadOnly
+	^ self traverseBodyInstruction: aTrapIfNotInstanceOf
 ]
 
 { #category : #traversing }
@@ -612,25 +510,7 @@ SoGraphTraverser >> traverseUnconditionalJump: anUnconditionalJump [
 ]
 
 { #category : #traversing }
-SoGraphTraverser >> traverseUnforward: anUnforward [
-	<generated>
-	^ self traverseBodyInstruction: anUnforward
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseUnforwardNonImmediate: anUnforwardNonImmediate [
-	<generated>
-	^ self traverseUnforward: anUnforwardNonImmediate
-]
-
-{ #category : #traversing }
 SoGraphTraverser >> traverseUnsafeOp: anUnsafeOp [
 	<generated>
 	^ self traverseOp: anUnsafeOp
-]
-
-{ #category : #traversing }
-SoGraphTraverser >> traverseYoungBranch: aYoungBranch [
-	<generated>
-	^ self traverseBranch: aYoungBranch
 ]

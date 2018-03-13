@@ -89,7 +89,8 @@ SoKnownType >> knownUnion: type [
 { #category : #testing }
 SoKnownType >> requiresStoreCheck [
 	"Answers if an instruction of this type stored into another object requires a store check"
-	^ (NoStoreCheckTypes includesAll: behaviors) not
+	^ behaviors allSatisfy: [ :behavior |
+		NoStoreCheckTypes includes: behavior ]
 ]
 
 { #category : #'send data specialization' }

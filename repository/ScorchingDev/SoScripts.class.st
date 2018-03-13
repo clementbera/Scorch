@@ -11,6 +11,58 @@ Class {
 }
 
 { #category : #scripts }
+SoScripts class >> bytecodeReftranslator [
+	{SoClassOp.
+	SoCreateArray.
+	SoSend.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp}
+		do: [ :each | 
+			SoBytecodeReferenceTranslator
+				compile:
+					'traverse' , (each name allButFirst: 2) , ': node' , self pragmaString
+						, String cr , String tab , 'node backend gen' , (each name allButFirst: 2)
+						, 'Reference: node with: builder'
+				classified: #traversing ].
+			
+	{ SoGlobal . SoMutableLiteral . SoInstVar . SoContextInstVar . SoRemoteTemp } do: [ :each |
+		SoBytecodeReferenceTranslator
+				compile:
+					'traverse' , (each name allButFirst: 2) , ': node' , self pragmaString
+						, String cr , String tab , 'node backend gen' , (each name allButFirst: 2)
+						, 'ReadReference: node with: builder'
+				classified: #traversing ]
+]
+
+{ #category : #scripts }
+SoScripts class >> bytecodetranslator [
+	{SoClassOp.
+	SoCreateArray.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp}
+		do: [ :each | 
+			SoBytecodeTranslator
+				compile:
+					'traverse' , (each name allButFirst: 2) , ': node' , self pragmaString
+						, String cr , String tab , 'node backend gen' , (each name allButFirst: 2)
+						, ': node with: builder'
+				classified: #traversing ].
+			
+	{ SoGlobal . SoMutableLiteral . SoInstVar . SoContextInstVar . SoRemoteTemp } do: [ :each |
+		SoBytecodeTranslator
+				compile:
+					'traverse' , (each name allButFirst: 2) , ': node' , self pragmaString
+						, String cr , String tab , 'node isWrite ifTrue: [^ node backend gen' , (each name allButFirst: 2)
+						, 'Write: node with: builder].' , String cr , String tab , 'node backend gen' , (each name allButFirst: 2)
+						, 'Read: node with: builder'
+				classified: #traversing ]
+]
+
+{ #category : #scripts }
 SoScripts class >> decodeEncoderClassComment [
 "To decode from Encoder class comment inline primitive:"
 	self collect: [ :each | 
@@ -66,16 +118,37 @@ SoScripts class >> displayClasses [
 	^ stream contents
 ]
 
+{ #category : #scripts }
+SoScripts class >> effect [
+	{ SoClassOp . SoCreateArray . SoCreateContextFullBlock . SoCreateFullBlock . SoCreateTempVect . SoPointerEqualsOp . SoPhi } do: [ :each |
+	SoEffect compile: 'gen' , (each name allButFirst: 2) , ': node with: builder', self pragmaString , String cr , String tab , '"effect free"' classified: #'bytecode generation'].
+
+	{ SoGlobal . SoMutableLiteral . SoInstVar . SoContextInstVar . SoRemoteTemp } do: [ :each |
+		SoEffect
+				compile:
+					'gen' , (each name allButFirst: 2), 'Write: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder genPopInto' , (each name allButFirst: 2) , ': node'
+				classified: #'bytecode generation'.
+		SoEffect
+				compile:
+					'gen' , (each name allButFirst: 2), 'Read: node with: builder' , self pragmaString
+						, String cr , String tab , '"effect-free, nothing"'
+				classified: #'bytecode generation'.
+		 ]
+]
+
 { #category : #development }
-SoScripts class >> exploreText [
-^ '
-"Make sure your image is prepared (Check image preparation workspace first)"	
-	
-"Ensure the validation works (expected failures on context access)"
+SoScripts class >> openInitialWorkspace [
+	GTPlayground openContents: '"Step 1: image recompilation with new bytecode set"
+CompilationContext bytecodeBackend: OpalEncoderForSistaV1 .
+CompilationContext usesFullBlockClosure: true .
+OpalCompiler recompileAll.
+
+"Step 2: ensure the validation works (expected 4 failures on context access)"
 SoValidator new
-	validateMethods: (SoValidator allMethods)
-	passes: { {#optimizeCodeNode} }
-	options: #(finalGraphSanity reportToTranscript ) .
+	validateMethods: SoValidator allExamples
+	passes: #(O0 O1 #O1b O2)
+	options: #( graphSanity comparison reportToTranscript ) .
 
 "Script to recover the systems" 
 CompiledMethod allInstances do: [ :each | (each isOptimized and: [ each metadata isCustomized ifNil: [ false ] ]) ifTrue: [ SoDependencyMap default uninstallMethod: each ]  ].
@@ -96,55 +169,27 @@ SoValidator timeout: 1000.'
 ]
 
 { #category : #development }
-SoScripts class >> imagePreparationText [
-^ '
-"Disable freetype for non freetype compatible VMs, to avoid crashes and for fast VM simulation"
-#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
-SessionManager default unregisterClassNamed: each  ].
+SoScripts class >> openLoadingWorkspace [
+	GTPlayground openContents: '#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
+	SessionManager default unregisterClassNamed: each  ].
 
-"Put correct value in special object array, patch mourner bug."
 Smalltalk specialObjectsArray at: 60 put: #trapTripped .
-Smalltalk specialObjectsArray at: 59 put: nil .
-WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
+ Smalltalk specialObjectsArray at: 59 put: nil .
+ WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
+ 
+ConfigurationOfScorch loadBleedingEdge.
 
-CompilationContext bytecodeBackend: (Smalltalk at: #OpalEncoderForSistaV1 ifAbsent: [ EncoderForSistaV1 ]) .
-CompilationContext usesFullBlockClosure: true.
-OpalCompiler recompileAll.' 
-]
+SoScripts openInitialWorkspace.
 
-{ #category : #development }
-SoScripts class >> openInitialWorkspace [
-	self openWorkspace: '
-"Make sure your image is prepared (Check image preparation workspace first)"	
-	
-"Ensure the validation works (expected failures on context access)"
-SoValidator new
-	validateMethods: (SoValidator allMethods)
-	passes: { {#optimizeCodeNode} }
-	options: #(finalGraphSanity reportToTranscript ) .
-
-"Script to recover the systems" 
-CompiledMethod allInstances do: [ :each | (each isOptimized and: [ each metadata isCustomized ifNil: [ false ] ]) ifTrue: [ SoDependencyMap default uninstallMethod: each ]  ].
-SoDependencyMap default debugFlushAll. 
-
-"Enable runtime optimizations"
-Smalltalk specialObjectsArray at: 59 put: #conditionalBranchCounterTrippedOn:.
-"Run bench, open transcript or command line for logs"
-[ 38 benchFib ] timeToRun logCr.
-[ShootoutTests binarytrees: 17 to: DummyStream basicNew ] timeToRun logCr.
-"Disable runtime optimization"
-Smalltalk specialObjectsArray at: 59 put: nil.
-
-"Other scripts for tests and validation"
-SoValidator exPass: true.
-SoValidator exPass: false.
-SoValidator timeout: 1000.' title: 'Exploring Scorch'
-]
-
-{ #category : #development }
-SoScripts class >> openWorkspaces [
-	GTPlayground openContents: self exploreText label: 'Explore Scorch'.
-	GTPlayground openContents: self imagePreparationText label: 'Image Preparation'
+CompilationContext bytecodeBackend: OpalEncoderForSistaV1 .
+ CompilationContext usesFullBlockClosure: true.
+ OpalCompiler recompileAll.
+ Transcript clear.
+ Transcript open.
+ SoValidator new 
+	validateMethods: SoValidator allExamples 
+	passes: #(O2) 
+	options: #( graphSanity reportToTranscript ).' 
 ]
 
 { #category : #utils }
@@ -169,6 +214,92 @@ SoScripts class >> scannerMethods [
 { #category : #utils }
 SoScripts class >> script [
 	"If a method has this pragma, it's generated from a class side method here."
+]
+
+{ #category : #scripts }
+SoScripts class >> spill [
+	{SoClassOp.
+	SoSend.
+	SoCreateArray.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp}
+		do: [ :each | 
+			SoSpill
+				compile:
+					'gen' , (each name allButFirst: 2) , ': node with: builder' , self pragmaString , String cr
+						, String tab , '"gen on reference"'
+				classified: #'bytecode generation' ].
+	{SoClassOp.
+	SoSend.
+	SoCreateArray.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp}
+		do: [ :each | 
+			SoSpill
+				compile:
+					'gen' , (each name allButFirst: 2) , 'Reference: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder gen' , (each name allButFirst: 2) , ': node'
+				classified: #'bytecode generation' ].
+	{ SoGlobal . SoMutableLiteral . SoInstVar . SoContextInstVar . SoRemoteTemp } do: [ :each |
+		SoSpill
+				compile:
+					'gen' , (each name allButFirst: 2), 'Read: node with: builder' , self pragmaString
+						, String cr , String tab , '"gen on reference"'
+				classified: #'bytecode generation'.
+		SoSpill
+				compile:
+					'gen' , (each name allButFirst: 2), 'ReadReference: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder genPush' ,  (each name allButFirst: 2) , ': node'
+				classified: #'bytecode generation'.
+		 ]
+]
+
+{ #category : #scripts }
+SoScripts class >> temp [
+	{SoClassOp.
+	SoCreateArray.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp.
+	SoPhi}
+		do: [ :each | 
+			SoTemp
+				compile:
+					'gen' , (each name allButFirst: 2) , 'Reference: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder genPushTemp: tempIndex'
+				classified: #'bytecode generation' ].
+	{SoClassOp.
+	SoCreateArray.
+	SoCreateContextFullBlock.
+	SoCreateFullBlock.
+	SoCreateTempVect.
+	SoPointerEqualsOp.
+	SoPhi}
+		do: [ :each | 
+			SoTemp
+				compile:
+					'gen' , (each name allButFirst: 2) , ': node with: builder' , self pragmaString , String cr
+						, String tab , 'builder gen' , (each name allButFirst: 2) , ': node.' , String cr
+						, String tab , 'builder genPopIntoTemp: tempIndex'
+				classified: #'bytecode generation' ].
+	{ SoGlobal . SoMutableLiteral . SoInstVar . SoContextInstVar . SoRemoteTemp } do: [ :each |
+		SoTemp
+				compile:
+					'gen' , (each name allButFirst: 2), 'Read: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder genPush' ,  (each name allButFirst: 2) , ': node.',
+						String cr , String tab , 'builder genPopIntoTemp: tempIndex'
+				classified: #'bytecode generation'.
+		SoTemp
+				compile:
+					'gen' , (each name allButFirst: 2), 'ReadReference: node with: builder' , self pragmaString
+						, String cr , String tab , 'builder genPushTemp: tempIndex'
+				classified: #'bytecode generation'.
+		 ]
 ]
 
 { #category : #scripts }

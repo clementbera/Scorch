@@ -7,9 +7,10 @@ Class {
 	#superclass : #SharedPool,
 	#classVars : [
 		'ContextClass',
+		'Forwarder',
 		'MaxArraySize',
 		'MaxByteArraySize',
-		'MaxSlotsToGuarantee',
+		'MaxBytesToGuarantee',
 		'NoStoreCheckTypes'
 	],
 	#category : #'Scorching-Constants'
@@ -27,5 +28,9 @@ SoMemoryManagerConstants class >> initialize [
 	"Approx. In my computer it's - 15. We could revert to -1 but it's very close o maxVal..."
 	MaxByteArraySize := SmallInteger maxVal - 9.
 	"Maximum number of bytes the optimized method can ask the VM to guarantee on Eden"
-	MaxSlotsToGuarantee := 1024*1024//Smalltalk wordSize.  "1Mb"
+	MaxBytesToGuarantee := 8000.  
+	"FakeForwarderClass, object of size more than 3 words with hash 8"
+	Forwarder := 'forwarderClassShouldBeAtLeast3Words' 
+		tryPrimitive: 161 withArgs: #(8);
+		yourself.  
 ]

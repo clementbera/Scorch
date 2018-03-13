@@ -2,12 +2,12 @@ Extension { #name : #SoAbsBodyInstruction }
 
 { #category : #'*ScorchingDev' }
 SoAbsBodyInstruction >> debugUses [
-	^ uses collect: [ :each | each isPhiInput ifTrue: [ each phi ] ifFalse: [ each ] ]
+	^ uses
 ]
 
 { #category : #'*ScorchingDev' }
 SoAbsBodyInstruction >> debugUsesNoDeopt [
-	^ self debugUses reject: [ :each | each isSunkObject ]
+	^ uses reject: [ :each | each isSunkObject ]
 ]
 
 { #category : #'*ScorchingDev' }

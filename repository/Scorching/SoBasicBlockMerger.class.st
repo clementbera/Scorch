@@ -32,7 +32,6 @@ SoBasicBlockMerger >> merge: basicBlock intoPredecessor: uniquePredecessor [
 	
 	"there is a single phi input."
 	basicBlock phisDo: [ :phi | phi removeAndReplaceUsesBy: phi inputs anyOne ].
-	basicBlock pisDo: [ :pi | pi removeAndReplaceUsesBy: pi expression ].
 	self mergeInstructions: basicBlock into: uniquePredecessor.
 	basicBlock codeNode basicBlocks remove: basicBlock.
 	self changePhiReferenceFrom: basicBlock to: uniquePredecessor.

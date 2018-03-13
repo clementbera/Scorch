@@ -12,7 +12,7 @@ Class {
 	#pools : [
 		'SoMagicConstants'
 	],
-	#category : #'Scorching-Pass-Split'
+	#category : #'Scorching-Pass-Flow'
 }
 
 { #category : #'private - phi remapping' }
@@ -124,12 +124,6 @@ SoBranchSplitter >> mapPhiPredecessors: phi into: map [
 		map at: basicBlock put: in ].
 ]
 
-{ #category : #'private - comp' }
-SoBranchSplitter >> maybeWorthSplittingComp: comp [
-	(comp receiver isPhi and: [ comp receiver basicBlock = comp basicBlock ]) ifTrue: [ ^ true ].
-	^comp firstArg isPhi and: [ comp firstArg basicBlock = comp basicBlock ]
-]
-
 { #category : #'private - send' }
 SoBranchSplitter >> maybeWorthSplittingSend: send [
 	true ifTrue: [ ^ false ]. "Triggers too many deopt when enabled, I need to understand why..."
@@ -140,18 +134,6 @@ SoBranchSplitter >> maybeWorthSplittingSend: send [
 	send receiver inputsAndBasicBlocksDo: [ :in :bb |
 		(in typeInformationAt: bb lastInstr) hasOneType ifTrue: [ ^ true ] ].
 	^ false
-]
-
-{ #category : #accessing }
-SoBranchSplitter >> merges [
-	<generated>
-	^ merges
-]
-
-{ #category : #accessing }
-SoBranchSplitter >> merges: aValue [
-	<generated>
-	merges := aValue
 ]
 
 { #category : #'private - split' }
@@ -239,7 +221,6 @@ SoBranchSplitter >> removeDeadBranches: branch [
 
 { #category : #public }
 SoBranchSplitter >> runOn: codeNode [
-	true ifTrue: [ ^ self ]. "DISABLED."
 	merges := self nonLoopMerges: codeNode.
 	[ merges isEmpty ] whileFalse: [ self splitMergeBasicBlock: merges removeLast ]
 ]
@@ -260,7 +241,7 @@ SoBranchSplitter >> shouldSplitBooleanBranch: instr mergePoint: mergePoint [
 	instrAndTypes keysAndValuesDo: [ :instrInBB :type |
 		"This may lead the JIT to generate quicker branches"
 		instrInBB isSmiCompOp ifTrue: [ ^ true ].
-		instrInBB isPointerEquals ifTrue: [ ^ true ].
+		instrInBB class == SoPointerEqualsOp ifTrue: [ ^ true ].
 		instrInBB isPhi ifTrue: [ ^ true ].
 		"One branch will be removed at the end of the process."
 		(type isOnlyType: True) ifTrue: [ ^ true ].
@@ -301,45 +282,22 @@ SoBranchSplitter >> splitBranch: branch mergePoint: mergePoint [
 	self removeDeadBranches: branch.
 ]
 
-{ #category : #'private - comp' }
-SoBranchSplitter >> splitComp: comp [
-	| newPhi map |
-	map := Dictionary new.
-	comp basicBlock predecessors do: [ :bb |
-		| copy |
-		copy := comp copy.
-		copy insertBefore: bb lastInstr.
-		copy receiver.
-		self splitPhisOf: comp basicBlock onCompCopy: copy.
-		map at: bb put: copy ].
-	comp basicBlock addFirstInstruction: (newPhi := SoPhi new).
-	map keysAndValuesDo: [ :bb :copyOfSend |
-		newPhi addInput: copyOfSend basicBlock: bb ].
-	comp removeAndReplaceUsesBy: newPhi.
-]
-
 { #category : #private }
 SoBranchSplitter >> splitMergeBasicBlock: basicBlock [
+	"Ensure only phis and branch"
 	basicBlock instructionsDo: [ :instr |
-		instr isPhi ifFalse: [ ^ instr isTraversedBy: self ] ].
-]
-
-{ #category : #'private - comp' }
-SoBranchSplitter >> splitPhisOf: basicBlock onCompCopy: copy [
-	basicBlock phisDo: [ :phi |
-		| input |
-		input := phi inputForBasicBlock: copy basicBlock.
-		copy subNodesDo: [ :sub |
-			sub = phi ifTrue: [ copy replaceSubNode: phi by: input ] ] ]
+		instr isPhi ifFalse: [ 
+			^ (instr isBranch or: [ instr isSend ])
+				ifTrue: [ instr isTraversedBy: self ]
+			 	ifFalse: [ self ] ] ].
 ]
 
 { #category : #'private - send' }
 SoBranchSplitter >> splitPhisOf: basicBlock onCopy: copy [
-	1halt. "Deep deoptINfo copy required"
 	basicBlock phisDo: [ :phi |
 		| input |
 		input := phi inputForBasicBlock: copy basicBlock.
-		copy subNodesDo: [ :sub |
+		copy subNodes do: [ :sub |
 			sub = phi ifTrue: [ copy replaceSubNode: phi by: input ] ].
 		copy deoptInfo sunkObjects do: [ :sunk | 
 			sunk subNodes do: [ :sub |
@@ -350,7 +308,6 @@ SoBranchSplitter >> splitPhisOf: basicBlock onCopy: copy [
 SoBranchSplitter >> splitSend: send [
 	| newPhi map |
 	map := Dictionary new.
-	1halt. "We need hard copy of deopt metadata here."
 	send basicBlock predecessors do: [ :bb |
 		| copy |
 		copy := send copy.
@@ -365,23 +322,21 @@ SoBranchSplitter >> splitSend: send [
 	"Maxi hack because no fixed points for optimisations leads to complete non sense.
 	 Basically remove this once optimisations are properly ordered."
 	SoSimplifyPhis new simplifyPhis: (OrderedCollection with: send receiver with: newPhi).
-	SoInliner new inlineSends: map values.
+	SoLateCallGraphInliner new inlineQuietlySends: map values.
 	
 ]
 
 { #category : #traversing }
-SoBranchSplitter >> traverseCompPipe: comp with: branch [
+SoBranchSplitter >> traverseBooleanBranch: branch [
 	| mergePoint |
-	(self maybeWorthSplittingComp: comp) ifFalse: [ ^ self ].
 	mergePoint := SoBranchMergeAnalysis new mergePointFor: branch.
 	(self shouldSplitBooleanBranch: branch mergePoint: mergePoint) ifFalse: [ ^ self ].
-	self splitComp: comp.
 	self splitBranch: branch mergePoint: mergePoint.
 	branch codeNode maintainPostOrder.
 ]
 
 { #category : #traversing }
-SoBranchSplitter >> traverseInstanceOfBranch: branch [
+SoBranchSplitter >> traverseBranchIfNotInstanceOf: branch [
 	| mergePoint |
 	mergePoint := SoBranchMergeAnalysis new mergePointFor: branch.
 	(self shouldSplitTypeBranch: branch mergePoint: mergePoint) ifFalse: [ ^ self ].
@@ -390,36 +345,9 @@ SoBranchSplitter >> traverseInstanceOfBranch: branch [
 ]
 
 { #category : #traversing }
-SoBranchSplitter >> traversePipelinedBooleanBranch: branch [
-	| mergePoint |
-	mergePoint := SoBranchMergeAnalysis new mergePointFor: branch.
-	(self shouldSplitBooleanBranch: branch mergePoint: mergePoint) ifFalse: [ ^ self ].
-	self splitBranch: branch mergePoint: mergePoint.
-	branch codeNode maintainPostOrder.
-]
-
-{ #category : #traversing }
-SoBranchSplitter >> traversePointerEqualsOp: comp [
-	| uses |
-	uses := comp uses select: [ :use | use isPipelinedBooleanBranch ].
-	uses size > 1 ifTrue: [ ^ self ].
-	(uses size = 1 and: [uses anyOne = comp nextInstr]) ifTrue: [ ^ self traverseCompPipe: comp with: uses anyOne].
-	uses size = 0 ifFalse: [ ^self ].
-	(self maybeWorthSplittingComp: comp) ifFalse: [ ^ self ].
-	self splitComp: comp.
-	"reprocess the merge"
-	merges addLast: comp basicBlock
-]
-
-{ #category : #traversing }
 SoBranchSplitter >> traverseSend: send [
 	(self maybeWorthSplittingSend: send) ifFalse: [ ^ self ].
 	self splitSend: send.
 	"reprocess the merge"
 	merges addLast: send basicBlock
-]
-
-{ #category : #traversing }
-SoBranchSplitter >> traverseSmiCompOp: comp [
-	self traversePointerEqualsOp: comp
 ]

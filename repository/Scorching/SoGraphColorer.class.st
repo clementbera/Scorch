@@ -1,19 +1,23 @@
 "
-I color each node of a graph such as there can't be 2 nodes with a relationship having the same color. I find the minimal number of color in [ minColor ; maxColor ] to color the nodes (and then color them). I am an adaptation of the Briggs-Chaitin graph coloring algorithm. 
+I am an implementation of the Briggs-Chaitin graph coloring algorithm. The algorithm colors each node of a graph such as there can't be 2 nodes with a relationship having the same color.
 
-WARNING: This algorithm is one of the most critical for performance. It has been rewritten for performance to get the optimiser under the threshold.
+WARNING: this has been rewritten for performance to get the optimiser under the threshold, only the 2 methods increasing the number of colors are critical (colorize is ok).
 
-Algorithm (G: Graph ; R: number of colors in [ minColor ; maxColor ])
-1) Dichotomical search of the minimum R such as G is R-colorable
-	While G has a node N with degree less than R
-		Remove N and its associated edges from G and push N on a stack S
-	If the entire graph has been removed then the graph is R-colorable 
-2) Coloration of the graph
-	While stack S contains a node N
-		Add N to graph G and assign it a color from the R colors
-	
+Summary of the algo in pseudo-code:
+While G cannot be R-colored
+    While graph G has a node N with degree less than R
+        Remove N and its associated edges from G and push N on a stack S
+    End While 
+    If the entire graph has been removed then the graph is R-colorable 
+        While stack S contains a node N
+            Add N to graph G and assign it a color from the R colors
+        End While
+    Else graph G cannot be colored with R colors
+        Simplify the graph G by choosing an object to spill and remove its node N from G
+        (spill nodes are chosen based on object’s number of definitions and references)
+End While
 
-
+success <Boolean> true once the algorithm has found a number of colors which is high enough to color all the nodes.
 
 
 "
@@ -21,7 +25,7 @@ Class {
 	#name : #SoGraphColorer,
 	#superclass : #Object,
 	#instVars : [
-		'lastSuccessfulStack'
+		'success'
 	],
 	#category : #'Scorching-Backend-Analysis'
 }
@@ -52,91 +56,77 @@ SoGraphColorer class >> exampleNodes: numNodes relations: numRelations [
 	^ self new color: nodes asOrderedCollection
 ]
 
-{ #category : #private }
-SoGraphColorer >> canColor: nodes with: numColor [
-	| stack setOfNodes |
-	self restoreRelations: nodes.
-	setOfNodes := nodes asSet.
-	stack := OrderedCollection new.
-	[ self removeNodeIn: setOfNodes degreeLessThan: numColor intoStack: stack ] whileTrue.
-	^ setOfNodes size = 0
-		ifTrue: [ lastSuccessfulStack := stack. true ]
-		ifFalse: [ false ].
-]
-
 { #category : #public }
-SoGraphColorer >> color: nodes minColor: minColor maxColor: maxColor [
-	self saveRelations: nodes.
-	(self canColor: nodes with: minColor) ifTrue: [ 
-		self setColors: minColor.
-		^ minColor ].
-	(self canColor: nodes with: maxColor) ifFalse: [ 
-		SoNotEnoughTemps signal: 'running out of temps...' ].
-	^ self dichotomicSearchIn: nodes from: minColor to: maxColor
-
+SoGraphColorer >> color: nodeCollection minColor: min maxColor: max [
+	"Attempt to color with the minimum number of color (min). 
+	  On failure, attempt to color with 1 more color, again and 
+	  again, until it reaches the max number of colors (max)."
+	success := false.
+	self saveRelations: nodeCollection.
+	min to: max do: [ :numColor |
+		self restoreRelations: nodeCollection.
+		self 
+			color: nodeCollection asSet
+			with: numColor.
+		success ifTrue: [ ^ numColor ] ].
+	SoNotEnoughTemps signal: 'running out of temps...'.
 ]
 
 { #category : #private }
-SoGraphColorer >> dichotomicSearchIn: nodes from: minColor to: maxColor [
-	"min is not successful, max is successful"
-	| min max mid |
-	min := minColor.
-	max := maxColor.
-	[ min + 1 = max ] whileFalse: [ 
-		mid := max + min // 2.
-		(self canColor: nodes with: mid) 
-			ifTrue: [ max := mid ]
-			ifFalse: [ min := mid ] ].
-	self setColors: max.
-	^ max
-]
-
-{ #category : #accessing }
-SoGraphColorer >> lastSuccessfulStack [
-	<generated>
-	^ lastSuccessfulStack
-]
-
-{ #category : #accessing }
-SoGraphColorer >> lastSuccessfulStack: aValue [
-	<generated>
-	lastSuccessfulStack := aValue
+SoGraphColorer >> color: nodeCollection with: numColor [
+	| stack change |
+	stack := OrderedCollection new.
+	change := true.
+	[change] whileTrue: [ 
+		change := false.
+		nodeCollection 
+			detect: [ :e | e relations size < numColor ]
+			ifFound: [ :node |
+				change := true.
+				nodeCollection remove: node.
+				stack add: node.
+				node removeFromGraph ]
+			ifNone: nil
+		 ].
+	nodeCollection ifEmpty: [ self colorize: stack  with: numColor].
 ]
 
 { #category : #private }
-SoGraphColorer >> removeNodeIn: nodeCollection degreeLessThan: numColor intoStack: stack [
-	"Inlined version - profiling"
-	nodeCollection do: [ :node | 
-		node relations size < numColor ifTrue: [ 
-			nodeCollection remove: node.
-			stack add: node.
-			node removeFromGraph. 
-			^ true ] 
-	].
-	^ false
-]
-
-{ #category : #private }
-SoGraphColorer >> restoreRelations: nodes [
-	nodes do: [ :e | e restoreRelations ]
-]
-
-{ #category : #private }
-SoGraphColorer >> saveRelations: nodes [
-	nodes do: [ :e | e saveRelations ]
-]
-
-{ #category : #private }
-SoGraphColorer >> setColors: numColors [
+SoGraphColorer >> colorize: stack with: numColors [
 	| coloris |
+	success := true.
 	coloris := 1 to: numColors.
-	self restoreRelations: lastSuccessfulStack.
-	[lastSuccessfulStack isEmpty] whileFalse: [ 
+	self restoreRelations: stack.
+	[stack isEmpty] whileFalse: [ 
 		| elem forbiddenColors |
-		elem := lastSuccessfulStack removeLast.
+		elem := stack removeLast.
 		forbiddenColors := (elem relations collect: [ :rel | rel color ]) asSet.
 		"There might be a nil in forbiddenColors for uninitialized colors"
 		elem color: (coloris detect: [ :e | (forbiddenColors includes: e) not ]).
 	 ].
 
+]
+
+{ #category : #private }
+SoGraphColorer >> restoreRelations: nodeCollection [
+	nodeCollection do: [ :e |
+		e restoreRelations ]
+]
+
+{ #category : #private }
+SoGraphColorer >> saveRelations: nodeCollection [
+	nodeCollection do: [ :e | 
+		e saveRelations ]
+]
+
+{ #category : #accessing }
+SoGraphColorer >> success [
+	<generated>
+	^ success
+]
+
+{ #category : #accessing }
+SoGraphColorer >> success: aValue [
+	<generated>
+	success := aValue
 ]

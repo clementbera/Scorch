@@ -19,103 +19,6 @@ SoInstructionStream >> arithmeticSend: selector numArgs: numArgs [
 ]
 
 { #category : #opcodes }
-SoInstructionStream >> callMappedInlinedPrimitive: prim [
-	<generated>
-	prim = 50 ifTrue: [^ self ensureEnoughSlots ].
-	prim = 150 ifTrue: [^ self immCheckPointerAtPut ].
-	prim = 151 ifTrue: [^ self immCheckStoreCheckPointerAtPut ].
-	prim = 152 ifTrue: [^ self immCheckMaybeContextPointerAtPut ].
-	prim = 153 ifTrue: [^ self immCheckMaybeContextStoreCheckPointerAtPut ].
-	prim = 154 ifTrue: [^ self immCheckByteAtPut ].
-	prim = 155 ifTrue: [^ self immCheckShortAtPut ].
-	prim = 156 ifTrue: [^ self immCheckWordAtPut ].
-	prim = 157 ifTrue: [^ self immCheckDoubleWordAtPut ].
-	prim = 200 ifTrue: [^ self withArgsExecuteMethod ].
-	prim = 250 ifTrue: [^ self backjumpAlwaysInterrupt ].
-
-]
-
-{ #category : #opcodes }
-SoInstructionStream >> callMethodPrimitive: prim [
-	
-]
-
-{ #category : #opcodes }
-SoInstructionStream >> callPrimitive: primNumber [
-	primNumber >= (1 << 15) ifTrue: [ ^ self callUnmappedInlinedPrimitive: (primNumber bitAnd: 1 << 13 - 1) ].  
-	^ self callMethodPrimitive: primNumber
-]
-
-{ #category : #opcodes }
-SoInstructionStream >> callUnmappedInlinedPrimitive: prim [
-	<generated>
-	prim = 1000 ifTrue: [^ self rawClass ].
-	prim = 1001 ifTrue: [^ self numSlots ].
-	prim = 1002 ifTrue: [^ self numBytes ].
-	prim = 1003 ifTrue: [^ self numShorts ].
-	prim = 1004 ifTrue: [^ self numWords ].
-	prim = 1005 ifTrue: [^ self numDoubleWords ].
-	prim = 1011 ifTrue: [^ self rawNew ].
-	prim = 1012 ifTrue: [^ self rawNewNoInit ].
-	prim = 1020 ifTrue: [^ self objectIdentityHash ].
-	prim = 1021 ifTrue: [^ self smiIdentityHash ].
-	prim = 1022 ifTrue: [^ self charIdentityHash ].
-	prim = 1023 ifTrue: [^ self smallfloatIdentityHash ].
-	prim = 1024 ifTrue: [^ self behaviorIdentityHash ].
-	prim = 1030 ifTrue: [^ self characterAsInteger ].
-	prim = 1031 ifTrue: [^ self smallFloatAsInteger ].
-	prim = 1032 ifTrue: [^ self smiAsFloat ].
-	prim = 1040 ifTrue: [^ self unforward ].
-	prim = 1041 ifTrue: [^ self possibleRoot ].
-	prim = 2000 ifTrue: [^ self smiAdd ].
-	prim = 2001 ifTrue: [^ self smiSub ].
-	prim = 2002 ifTrue: [^ self smiMul ].
-	prim = 2003 ifTrue: [^ self smiDivide ].
-	prim = 2004 ifTrue: [^ self smiDiv ].
-	prim = 2005 ifTrue: [^ self smiMod ].
-	prim = 2006 ifTrue: [^ self smiQuo ].
-	prim = 2016 ifTrue: [^ self smiBitAnd ].
-	prim = 2017 ifTrue: [^ self smiBitOr ].
-	prim = 2018 ifTrue: [^ self smiBitXor ].
-	prim = 2019 ifTrue: [^ self smiBitShiftLeft ].
-	prim = 2020 ifTrue: [^ self smiBitShiftRight ].
-	prim = 2032 ifTrue: [^ self smiGreater ].
-	prim = 2033 ifTrue: [^ self smiLess ].
-	prim = 2034 ifTrue: [^ self smiGreaterOrEqual ].
-	prim = 2035 ifTrue: [^ self smiLessOrEqual ].
-	prim = 2036 ifTrue: [^ self smiEquals ].
-	prim = 2037 ifTrue: [^ self smiNotEquals ].
-	prim = 2038 ifTrue: [^ self rawEqualsEquals ].
-	prim = 2039 ifTrue: [^ self rawNotEqualsEquals ].
-	prim = 2048 ifTrue: [^ self rawNewColon ].
-	prim = 2049 ifTrue: [^ self rawNewColonNoInit ].
-	prim = 2064 ifTrue: [^ self pointerAt ].
-	prim = 2065 ifTrue: [^ self maybeContextPointerAt ].
-	prim = 2066 ifTrue: [^ self byteAt ].
-	prim = 2067 ifTrue: [^ self shortAt ].
-	prim = 2068 ifTrue: [^ self wordAt ].
-	prim = 2069 ifTrue: [^ self doubleWordAt ].
-	prim = 3000 ifTrue: [^ self pointerAtPut ].
-	prim = 3001 ifTrue: [^ self storeCheckPointerAtPut ].
-	prim = 3002 ifTrue: [^ self maybeContextPointerAtPut ].
-	prim = 3003 ifTrue: [^ self maybeContextStoreCheckPointerAtPut ].
-	prim = 3004 ifTrue: [^ self byteAtPut ].
-	prim = 3005 ifTrue: [^ self shortAtPut ].
-	prim = 3006 ifTrue: [^ self wordAtPut ].
-	prim = 3007 ifTrue: [^ self doubleWordAtPut ].
-	prim = 6000 ifTrue: [^ self backjumpNoInterrupt ].
-	prim = 7016 ifTrue: [^ self jumpWritable ].
-	prim = 7017 ifTrue: [^ self jumpReadOnly ].
-	prim = 7018 ifTrue: [^ self jumpYoung ].
-	prim = 7019 ifTrue: [^ self jumpOld ].
-	prim = 8000 ifTrue: [^ self instanceOfJumpTrue ].
-	prim = 8001 ifTrue: [^ self instanceOfJumpFalse ].
-	prim = 8002 ifTrue: [^ self instanceOfOneOfJumpTrue ].
-	prim = 8003 ifTrue: [^ self instanceOfOneOfJumpFalse ].
-
-]
-
-{ #category : #opcodes }
 SoInstructionStream >> drop [
 	self drop: 1
 ]
@@ -123,13 +26,6 @@ SoInstructionStream >> drop [
 { #category : #opcodes }
 SoInstructionStream >> drop: n [
 	stackp := stackp - n
-]
-
-{ #category : #private }
-SoInstructionStream >> interpretBytes [
-	| endPC |
-	endPC := self method size.
-	[pc > endPC] whileFalse: [self interpretNextInstructionFor: self]
 ]
 
 { #category : #decoding }
@@ -174,7 +70,7 @@ SoInstructionStream >> interpretNext2ByteSistaV1Instruction: bytecode for: clien
 				super: bytecode = 235
 				numArgs: (extB bitShift: 3) + (byte \\ 8)].
 		 bytecode = 236 ifTrue:
-			[^self callMappedInlinedPrimitive: byte].
+			[^self unusedBytecode: client at: startPC].
 		bytecode = 237 ifTrue:
 			[^client jump: (extB bitShift: 8) + byte].
 		 ^client jump: (extB bitShift: 8) + byte if: bytecode = 238].
@@ -327,7 +223,6 @@ SoInstructionStream >> interpretNextSistaV1InstructionFor: client [
 		 offset < 8 ifTrue:
 		 	[^client popIntoTemporaryVariable: offset].
 		 offset = 8 ifTrue: [ ^ client doPop ].
-		 offset = 9 ifTrue: [ ^ client trap ].
 		 ^self unusedBytecode: client at: savedPC].
 	"2 byte and 3 byte codes"
 	byte < 248 ifTrue:

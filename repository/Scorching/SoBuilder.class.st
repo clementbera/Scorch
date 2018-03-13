@@ -56,39 +56,19 @@ SoBuilder >> arg: index [
 
 { #category : #building }
 SoBuilder >> array: values [
-	| init |
-	init := self addInstr: ((SoPointerNewColon new
-		behavior: Array) 
-		sized: (SoConstant constant: values size);
-		yourself).
-	init	needsInit: false.
-	values withIndexDo: [ :val :i |
-		self addInstr: (SoPointerWrite new 
-			object: init;
-			index: (SoConstant constant: i);
-			expression: val;
-			storeCheck: false;
-			yourself) ].
-	^ init
+	^ self addInstr: (SoCreateArray new values: values; yourself)
 ]
 
 { #category : #building }
 SoBuilder >> backjump: basicBlock [
-	^  self addCFGInstr: (SoSmalltalkBackjump 
-		from: currentBasicBlock
-		to: basicBlock)
-]
-
-{ #category : #building }
-SoBuilder >> backjump: basicBlock class: class [
-	^  self addCFGInstr: (class 
+	^  self addCFGInstr: (SoBackjump 
 		from: currentBasicBlock
 		to: basicBlock)
 ]
 
 { #category : #accessing }
 SoBuilder >> branch: expression [
-	^ self addCFGInstr: (SoSmalltalkBooleanBranch new 
+	^ self addCFGInstr: (SoBooleanBranch new 
 		expression: expression;
 		yourself)
 ]
@@ -120,18 +100,17 @@ SoBuilder >> context [
 
 { #category : #building }
 SoBuilder >> contextInstVar: index of: object [
-	^ self addInstr: (SoMaybeContextPointerRead new
-		index: (SoConstant constant: index + 1);
+	^ self addInstr: (SoContextInstVar new
+		index: index;
 		object: object;
 		yourself)
 ]
 
 { #category : #building }
 SoBuilder >> createTempVector: size [
-	^ self addInstr: (SoPointerNewColon new
-		behavior: Array;
-		sized: (SoConstant constant: size);
-		yourself).
+	^ self addInstr: (SoCreateTempVect new
+		vectorSize: size;
+		yourself)
 ]
 
 { #category : #accessing }
@@ -183,18 +162,16 @@ SoBuilder >> fullBlock: compiledBlock receiver: rcvr copiedValues: copiedValues 
 
 { #category : #building }
 SoBuilder >> global: assoc [
-	^ self addInstr: (SoPointerRead new
-		object: (self innerGlobal: assoc);
-		index: (SoConstant constant: 2);
-		type: (SoSingleHintType for: assoc value class);
+	^ self addInstr: (SoGlobal new
+		assoc: assoc;
 		yourself)
 ]
 
 { #category : #building }
 SoBuilder >> indirectTemp: remoteTempIndex vector: varHolder [
-	^ self addInstr: (SoPointerRead new
-		index: (SoConstant constant: remoteTempIndex + 1);
-		object: varHolder;
+	^ self addInstr: (SoRemoteTemp new
+		remoteIndex: remoteTempIndex;
+		tempVector: varHolder;
 		yourself)
 ]
 
@@ -211,22 +188,10 @@ SoBuilder >> initialize [
 	self switchToBasicBlock: SoBasicBlock new.
 ]
 
-{ #category : #'building-support' }
-SoBuilder >> innerGlobal: assoc [
-	| litR |
-	litR := self addInstr: (SoMutableLiteralRead new 
-		type: (SoSingleHintType for: assoc class);
-		literal: assoc;
-		yourself).
-	^ self addInstr: (SoUnforwardNonImmediate new
-		expression: litR;
-		yourself)
-]
-
 { #category : #building }
 SoBuilder >> instVar: index of: object [
-	^ self addInstr: (SoPointerRead new
-		index: (SoConstant constant: index + 1);
+	^ self addInstr: (SoInstVar new
+		index: index;
 		object: object;
 		yourself)
 ]
@@ -249,9 +214,8 @@ SoBuilder >> loopHead [
 
 { #category : #building }
 SoBuilder >> mutableLiteral: lit [
-	^ self addInstr: (SoMutableLiteralRead new
+	^ self addInstr: (SoMutableLiteral new
 		literal: lit;
-		type: (SoSingleHintType for: lit class);
 		yourself)
 ]
 
@@ -270,16 +234,9 @@ SoBuilder >> phi [
 
 { #category : #building }
 SoBuilder >> pointerEquals: rcvr with: arg [
-	^ self addInstr: (SoRawPointerEqualsOp 
-		withReceiver: (self unforwardOp: rcvr)
-		arguments: {self unforwardOp: arg})
-]
-
-{ #category : #accessing }
-SoBuilder >> rawBranch: expression [
-	^ self addCFGInstr: (SoPipelinedBooleanBranch new 
-		expression: expression;
-		yourself)
+	^ self addInstr: (SoPointerEqualsOp 
+		withReceiver: rcvr
+		arguments: {arg})
 ]
 
 { #category : #'building-immediate' }
@@ -328,36 +285,39 @@ SoBuilder >> send: selector receiver: rcvr args: args [
 
 { #category : #building }
 SoBuilder >> store: val contextInstVar: index of: object [
-	^ self addInstr: (SoMaybeContextPointerWrite new
-		index: (SoConstant constant: index + 1);
+	^ self addInstr: (SoContextInstVar new
+		index: index;
 		object: object;
+		beWrite;
 		expression: val;
 		yourself)
 ]
 
 { #category : #building }
 SoBuilder >> store: val global: assoc [
-	^ self addInstr: (SoReadOnlyCheckPointerWrite new
-		object: (self innerGlobal: assoc);
-		index: (SoConstant constant: 2);
+	^ self addInstr: (SoGlobal new 
+		assoc: assoc;
+		beWrite;
 		expression: val;
 		yourself)
 ]
 
 { #category : #building }
 SoBuilder >> store: val indirectTemp: remoteTempIndex vector: varHolder [
-	^ self addInstr: (SoPointerWrite new
-		index: (SoConstant constant: remoteTempIndex + 1);
-		object: varHolder;
+	^ self addInstr: (SoRemoteTemp new
+		remoteIndex: remoteTempIndex;
+		tempVector: varHolder;
+		beWrite;
 		expression: val;
 		yourself)
 ]
 
 { #category : #building }
 SoBuilder >> store: val instVar: index of: object [
-	^ self addInstr: (SoReadOnlyCheckPointerWrite new
-		index: (SoConstant constant: index + 1);
+	^ self addInstr: (SoInstVar new
+		index: index;
 		object: object;
+		beWrite;
 		expression: val;
 		yourself)
 ]
@@ -384,11 +344,4 @@ SoBuilder >> terminate [
 	codeNode addBasicBlock: returnBasicBlock.
 	SoBasicBlockMerger new mergeIntoPredecessorIfPossible: returnBasicBlock.
 	^ codeNode  
-]
-
-{ #category : #'building-support' }
-SoBuilder >> unforwardOp: op [
-	^ self addInstr: (SoUnforward new
-		expression: op;
-		yourself)
 ]

@@ -35,7 +35,7 @@ Class {
 		'basicBlock',
 		'mapping'
 	],
-	#category : #'Scorching-Pass-Split'
+	#category : #'Scorching-Pass-Flow'
 }
 
 { #category : #accessing }

@@ -22,20 +22,8 @@ SoAbstractScanner >> blockReturnTop [
 ]
 
 { #category : #opcodes }
-SoAbstractScanner >> callMappedInlinedPrimitive: prim [
-	prim = 250 ifTrue: [^ self shouldBeImplemented "backjumpWithInterrupt" ].
-	
-]
-
-{ #category : #opcodes }
-SoAbstractScanner >> callMethodPrimitive: prim [
+SoAbstractScanner >> callPrimitive: prim [
 	<script>
-]
-
-{ #category : #opcodes }
-SoAbstractScanner >> callUnmappedInlinedPrimitive: prim [
-	prim = 6000 ifTrue: [^ self backjumpNoInterrupt ].
-	
 ]
 
 { #category : #opcodes }

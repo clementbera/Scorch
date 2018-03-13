@@ -45,6 +45,15 @@ SoSpillAnalysis >> traverseCFGInstruction: instr [
 	^ self traverseBodyInstruction: instr
 ]
 
+{ #category : #traversing }
+SoSpillAnalysis >> traverseHeapAccess: access [
+	access subNodes do: [ :s | s backend: SoTemp new ].
+	access isWrite ifTrue: 
+		[ access expression backend: ((access expression uses size = 1 and: [ access prevInstr == access expression ]) 
+		 	ifTrue: [ SoSpill new ]
+			ifFalse: [ SoTemp new ])].
+]
+
 { #category : #public }
 SoSpillAnalysis >> traverseInstruction: instr [
 	(instr isCFGInstr not and: [instr backend isNil]) ifTrue: [ 
@@ -58,16 +67,4 @@ SoSpillAnalysis >> traverseInstruction: instr [
 { #category : #traversing }
 SoSpillAnalysis >> traversePhi: phi [
 	phi inputs do: [ :s | s backend: SoTemp new ]
-]
-
-{ #category : #traversing }
-SoSpillAnalysis >> traversePointerEqualsOp: op [
-	(op uses allSatisfy: [ :each | each isPipelinedBooleanBranch ]) ifTrue: [ op backend: SoSpill new ].
-	^ super traversePointerEqualsOp: op
-]
-
-{ #category : #traversing }
-SoSpillAnalysis >> traverseSmiCompOp: op [
-	(op uses allSatisfy: [ :each | each isPipelinedBooleanBranch ]) ifTrue: [ op backend: SoSpill new ].
-	^ super traverseSmiCompOp: op
 ]

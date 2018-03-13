@@ -1,6 +1,13 @@
 "
 Smi addition with no overflow check.
 
+Note: for canonicalization purpose, if there's a constant it's the first operand
+
+Ex:
+t + 1 -> t USmiAdd: 1
+1 + t -> t USmiAdd: 1
+t - 1 -> t USmiAdd: -1 
+...
 "
 Class {
 	#name : #SoSmiAddOp,
@@ -8,39 +15,30 @@ Class {
 	#category : #'Scorching-Nodes-SmiOp'
 }
 
+{ #category : #'instance creation' }
+SoSmiAddOp class >> fromSend: send [
+	"Canonicalization"
+	send receiver isConstant ifTrue: 
+		[ ^ self new 	
+				receiver: send firstArg;
+				arguments: { send receiver };
+				yourself ].
+	^ super fromSend: send
+]
+
 { #category : #types }
 SoSmiAddOp >> hasRangeInformation [
-	"Can be true when unchecking but not now without E-SSA"
-	^ receiver hasRangeInformation and: [ self firstArg hasRangeInformation ]
+	^  true
 ]
 
-{ #category : #'loop analysis' }
-SoSmiAddOp >> isIteratorMutator: phi [
-	self isUncheckedAddConstant ifTrue: [ ^ true ].
-	(self isSub: receiver thePhi: phi) ifTrue: [ 
-		^ self isPosOrNegRange: self firstArg ].
-	(self isSub: self firstArg thePhi: phi) ifFalse: [ ^ false ].
-	^ self isPosOrNegRange: receiver
-]
-
-{ #category : #'loop analysis' }
-SoSmiAddOp >> isPosOrNegRange: sub [
-	sub hasRangeInformation ifFalse: [ ^ false ].
-	^ sub rangeInformation isPositiveOrNegative
+{ #category : #testing }
+SoSmiAddOp >> isIteratorMutator [
+	^ self isUncheckedAddConstant
 ]
 
 { #category : #testing }
 SoSmiAddOp >> isSmiAddOp [
 	^ true
-]
-
-{ #category : #'loop analysis' }
-SoSmiAddOp >> isSub: sub thePhi: phi [ 
-	| instr |
-	"Take a short-cut here not to loop too much in range analysis"
-	instr := sub.
-	[ instr isPi ] whileTrue: [ instr := instr expression ].
-	^ instr = phi
 ]
 
 { #category : #traversing }
@@ -55,31 +53,15 @@ SoSmiAddOp >> isUncheckedAddConstant [
 	^ self firstArg isSmiConstant
 ]
 
-{ #category : #'loop analysis' }
-SoSmiAddOp >> iteratorMutatorValue: phi [
-	self isUncheckedAddConstant ifTrue: [ ^ self firstArg constant ].
-	^ self iteratorMutatorValueOf: ((self isSub: receiver thePhi: phi) ifTrue: [ self firstArg ] ifFalse: [ receiver ])
-]
-
-{ #category : #'loop analysis' }
-SoSmiAddOp >> iteratorMutatorValueOf: sub [
-	| range |
-	^ (range := sub rangeInformation) isPositive 
-		ifTrue: [ range actualMaxVal ]
-		ifFalse: [ range actualMinVal ] 
-]
-
-{ #category : #'loop analysis' }
-SoSmiAddOp >> nextIterator: phi [
-	self isUncheckedAddConstant ifTrue: [ ^ receiver ].
-	^ (self isSub: receiver thePhi: phi)
-		ifTrue: [ receiver ]
-		ifFalse: [ self firstArg ]
+{ #category : #types }
+SoSmiAddOp >> nextIterator [
+	^ receiver
 ]
 
 { #category : #primitive }
 SoSmiAddOp >> primitiveNumber [
-	^ 2000
+	<script>
+	^ USmiAdd
 ]
 
 { #category : #types }
@@ -93,5 +75,6 @@ SoSmiAddOp >> rangeInformation [
 
 { #category : #primitive }
 SoSmiAddOp >> safePrimitiveNumber [
-	^  1
+	<script>
+	^ Add
 ]

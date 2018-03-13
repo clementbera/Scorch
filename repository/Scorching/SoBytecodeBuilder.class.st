@@ -19,7 +19,7 @@ I am used in a 2-step process to generate compiledMethod/CompiledBlock out of th
 "
 Class {
 	#name : #SoBytecodeBuilder,
-	#superclass : #SoGraphTraverser,
+	#superclass : #Object,
 	#instVars : [
 		'encoder',
 		'referenceTranslator',
@@ -98,7 +98,7 @@ SoBytecodeBuilder >> blockOuterMapping: aValue [
 SoBytecodeBuilder >> bytecodeSizeFor: jump [
 	| distance |
 	distance := self jumpDistance: jump.
-	distance = 0 ifTrue: [ ^ jump popSize ].
+	distance = 0 ifTrue: [ ^ jump isBranch asBit ].
 	^ jump 
 		bytecodeSizeFor: distance 
 		bytecodeBuilder: self
@@ -229,6 +229,22 @@ SoBytecodeBuilder >> genBytecodes [
 ]
 
 { #category : #'bytecode generation' }
+SoBytecodeBuilder >> genClassOp: op [
+	referenceTranslator translate: op receiver.
+	numStack := numStack max: 1.
+	encoder 
+		genSendSpecial: (SpecialSelectors indexOf: #class)
+		numArgs: 0
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genCreateArray: array [
+	referenceTranslator translateAll: array values.
+	numStack := numStack max: array values size + 1.
+	encoder genPushConsArray: array values size.
+]
+
+{ #category : #'bytecode generation' }
 SoBytecodeBuilder >> genCreateContextFullBlock: fullBlock [
 	| recOnStack cb |
 	"each one needs a different code to have a single identity to remap closure outercontext"
@@ -245,8 +261,18 @@ SoBytecodeBuilder >> genCreateContextFullBlock: fullBlock [
 ]
 
 { #category : #'bytecode generation' }
+SoBytecodeBuilder >> genCreateTempVect: tempVect [
+	encoder genPushNewArray: tempVect vectorSize 
+]
+
+{ #category : #'bytecode generation' }
 SoBytecodeBuilder >> genDeoptInfo: node [
 	^ self recordDeoptPoint: (node deoptInfo asDeoptFor: node) basicBlock: node basicBlock
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genEnsureEnoughSpace: instr [
+	encoder genEnsureAllocatableSlots: instr numWords
 ]
 
 { #category : #'bytecode generation' }
@@ -258,19 +284,57 @@ SoBytecodeBuilder >> genImmediateTrap: trap [
 ]
 
 { #category : #'bytecode generation' }
-SoBytecodeBuilder >> genInstantiation: op [
-	| index |
-	index := self literalIndexOf: op behavior.
-	encoder genPushLiteral: index.
-	op subNodesDo: [ :sub | referenceTranslator translate: sub ].
-	numStack := numStack max: op subNodesSize + 1.
-	encoder genCallPrimitive: op primitiveNumber + (1<< 15)
-	
+SoBytecodeBuilder >> genPointerEqualsOp: op [ 
+	referenceTranslator translate: op receiver.
+	referenceTranslator translate: op arguments first.
+	numStack := numStack max: 2.
+	encoder 
+		genSendSpecial: (SpecialSelectors indexOf: #==)
+		numArgs: 1
 ]
 
 { #category : #'bytecode generation' }
 SoBytecodeBuilder >> genPop [ 
 	encoder genPop
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPopIntoContextInstVar: iv [
+	referenceTranslator translate: iv expression.
+	self genStoreFlag: iv.
+	iv object isReceiver ifTrue: [ 
+		^ encoder genStorePopInstVarLong: iv index ].
+	encoder 
+		genStorePopRemoteInstanceVariable: iv index 
+		inObjectAt: (self remoteObjectIndex: iv object).
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPopIntoGlobal: gbl [
+	referenceTranslator translate: gbl expression.
+	self genStoreFlag: gbl.
+	encoder genStorePopLiteralVar:  (self literalIndexOf: gbl assoc)
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPopIntoInstVar: iv [
+	"This method is complex because the inst var store is generated differently 
+	  on receiver inst var and other object inst var. In addition, if the store flag is 
+	  not needed we don't generate it to avoid wasting bytes...  "
+	referenceTranslator translate: iv expression.
+	iv object isReceiver ifTrue: 
+		[ iv isDefaultStore ifTrue: [ ^ encoder genStorePopInstVar: iv index ].
+		  self genStoreFlag: iv.
+		 ^ encoder genStorePopInstVarLong: iv index ].
+	self genStoreFlag: iv.
+	encoder genStorePopRemoteInstanceVariable: iv index inObjectAt: (self remoteObjectIndex: iv object).
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPopIntoRemoteTemp: remote [
+	referenceTranslator translate: remote expression.
+	self genStoreFlag: remote .
+	encoder genStorePopRemoteTemp: remote remoteIndex inVectorAt: remote tempVector backend tempIndex + numArgs - 1
 ]
 
 { #category : #'bytecode generation' }
@@ -306,6 +370,28 @@ SoBytecodeBuilder >> genPushConstant: cst [
 ]
 
 { #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPushContextInstVar: iv [
+	iv object isReceiver ifTrue: [ ^ encoder genPushInstVarLong: iv index ].
+	"both store check are ignored anyway for pushes."
+	encoder 
+		genStoreFlagExtensionIgnoreStoreCheck: false 
+		maybeContext: true 
+		ignoreReadOnlyCheck: false.
+	encoder genPushRemoteInstanceVariable: iv index inObjectAt: (self remoteObjectIndex: iv object).
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPushGlobal: gbl [
+	encoder genPushLiteralVar: (self literalIndexOf: gbl assoc)
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPushInstVar: iv [
+	iv object isReceiver ifTrue: [ ^ encoder genPushInstVar: iv index ].
+	encoder genPushRemoteInstanceVariable: iv index inObjectAt: (self remoteObjectIndex: iv object).
+]
+
+{ #category : #'bytecode generation' }
 SoBytecodeBuilder >> genPushMutableLiteral: mutableLiteral [
 	| index |
 	index := self literalIndexOf: mutableLiteral literal.
@@ -315,6 +401,11 @@ SoBytecodeBuilder >> genPushMutableLiteral: mutableLiteral [
 { #category : #'bytecode generation' }
 SoBytecodeBuilder >> genPushReceiver [
 	encoder genPushReceiver
+]
+
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> genPushRemoteTemp: remote [
+	encoder genPushRemoteTemp: remote remoteIndex inVectorAt: remote tempVector backend tempIndex + numArgs - 1
 ]
 
 { #category : #'bytecode generation' }
@@ -350,14 +441,24 @@ SoBytecodeBuilder >> genSend: send [
 ]
 
 { #category : #'bytecode generation' }
+SoBytecodeBuilder >> genStoreFlag: write [
+	"If the store is a default store, i.e., the flag encodes nothing
+	 and the checks are the same than normal Smalltalk code,
+	we don't generate it to compact generated bytecodes. "
+	write isDefaultStore ifTrue: [ ^ self ].
+	encoder 
+		genStoreFlagExtensionIgnoreStoreCheck: write ignoreStoreCheck 
+		maybeContext: write isContextStore
+		ignoreReadOnlyCheck: 	write hasImmutabilityCheck not
+]
+
+{ #category : #'bytecode generation' }
 SoBytecodeBuilder >> genUnsafeOp: op [
-	op subNodesDo: [ :sub | referenceTranslator translate: sub ].
-	numStack := numStack max: op subNodesSize.
-	op isMapped 
-		ifTrue: [ encoder genCallMappedInlinedPrimitive: op primitiveNumber.
-				 op hasDeoptInfo ifTrue: [ self genDeoptInfo: op ] ]
-		ifFalse: [ encoder genCallPrimitive: op primitiveNumber + (1<< 15) ]
-	
+	referenceTranslator translate: op receiver.
+	referenceTranslator translateAll: op arguments.
+	numStack := numStack max: op arguments size + 1.
+	(op isNew and: [ op nilInit not ]) ifTrue: [ encoder genUnsignedSingleExtendB: 1 ].
+	encoder genCallPrimitive: op primitiveNumber + (1<< 15)
 ]
 
 { #category : #testing }
@@ -538,8 +639,8 @@ SoBytecodeBuilder >> reduceJumpSize: col [
 
 { #category : #jumps }
 SoBytecodeBuilder >> reduceJumps: col [	
-	self setDefaultJumpSizes: 7 for: col.
-	self reduceJumpSize: col
+	self setDefaultJumpSizes: self encoderClass backJumpBytecodeSize for: col.
+	self reduceJumpSize: (col reject: [ :jmp | jmp isBackjump ])
 ]
 
 { #category : #accessing }
@@ -560,6 +661,16 @@ SoBytecodeBuilder >> remap: map with: position [
 		assoc key: assoc key + position ]
 ]
 
+{ #category : #'bytecode generation' }
+SoBytecodeBuilder >> remoteObjectIndex: node [
+	node isArg ifTrue: [ ^ node index ].
+	node isConstant ifTrue: 
+		[ self genPushConstant: node.
+		  self genPopIntoTemp: extraTempIndex.
+		  ^ self tempIndex: extraTempIndex ].
+	^ self tempIndex: node backend tempIndex
+]
+
 { #category : #jumps }
 SoBytecodeBuilder >> setDefaultJumpSizes: int for: col [
 	col do: [ :jump |
@@ -572,8 +683,6 @@ SoBytecodeBuilder >> spurHeaderFor: codeNode bytesSize: size [
 	flag := (Smalltalk version includesSubString: 'Squeak')
 		ifTrue: [ self encoderClass new ]
 		ifFalse: [ self encoderClass ].
-	numTemps + numStack  > CompiledMethod fullFrameSize ifTrue: [ 
-		^ self error: 'Cannot generate code -- stack including temps is too deep' ].
 	^ (CompiledMethod headerFlagForEncoder: flag) +
 		(numArgs bitShift: 24) +
 		(numTemps + numArgs bitShift: 18) +
@@ -598,54 +707,14 @@ SoBytecodeBuilder >> tempIndex: index [
 	^ index + numArgs + numCopied - 1
 ]
 
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseBranch: branch [
-	| distance next |
-	distance := self jumpForwardSizeFrom: branch basicBlock to: branch targetBasicBlock.
-	(distance = 0 and: [ branch backEndJumpSize = 1 ]) ifTrue: [ ^ encoder genPop ].
-	next := branch codeNode basicBlocks at: (branch codeNode basicBlocks indexOf: branch basicBlock) + 1.
-	self 
-		assert: (branch trueBasicBlock = next or: [branch falseBasicBlock = next])
-		description: 'branch incorrect'.
-	encoder genPushIntegerLong: distance.
-	branch backendCondition
-		ifTrue: [ encoder genCallInlinePrimitive: branch primitiveNumber ]
-		ifFalse: [ encoder genCallInlinePrimitive: branch invertedPrimitiveNumber ]
+{ #category : #jumps }
+SoBytecodeBuilder >> traverseBackjump: backjump [
+	self genDeoptInfo: backjump.
+	encoder genJump: (self backjumpSizeFrom: backjump basicBlock to: backjump targetBasicBlock) negated.
 ]
 
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseImmediateTrap: trap [
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseInstanceOfBranch: branch [
-	| distance next |
-	distance := self jumpForwardSizeFrom: branch basicBlock to: branch targetBasicBlock.
-	(distance = 0 and: [ branch backEndJumpSize = 2 ]) ifTrue: [ encoder genPop. ^ encoder genPop ].
-	next := branch codeNode basicBlocks at: (branch codeNode basicBlocks indexOf: branch basicBlock) + 1.
-	self 
-		assert: (branch trueBasicBlock = next or: [branch falseBasicBlock = next])
-		description: 'branch incorrect'.
-	encoder genPushIntegerLong: distance.
-	branch backendCondition
-		ifTrue: [ encoder genCallInlinePrimitive: branch primitiveNumber ]
-		ifFalse: [ encoder genCallInlinePrimitive: branch invertedPrimitiveNumber ]
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseJumpAhead: jumpAhead [ 
-	jumpAhead backEndJumpSize = 0 ifTrue: [ ^ self "no jump" ].
-	encoder genJump: (self jumpForwardSizeFrom: jumpAhead basicBlock to: jumpAhead targetBasicBlock)
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseNoInterruptBackjump: backjump [
-	encoder genPushIntegerLong: (self backjumpSizeFrom: backjump basicBlock to: backjump targetBasicBlock) negated.
-	encoder genCallPrimitive: (1 << 15) +  6000.
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traversePipelinedBooleanBranch: branch [
+{ #category : #jumps }
+SoBytecodeBuilder >> traverseBooleanBranch: branch [
 	| distance next |
 	distance := self jumpForwardSizeFrom: branch basicBlock to: branch targetBasicBlock.
 	next := branch codeNode basicBlocks at: (branch codeNode basicBlocks indexOf: branch basicBlock) + 1.
@@ -653,25 +722,46 @@ SoBytecodeBuilder >> traversePipelinedBooleanBranch: branch [
 		assert: (branch trueBasicBlock = next or: [branch falseBasicBlock = next])
 		description: 'Boolean branch incorrect'.
 	(distance = 0 and: [ branch backEndJumpSize = 1 ]) ifTrue: [ ^ encoder genPop ].
+	"CRASHES THE VM...
+	branch hasDeoptInfo 
+		ifFalse: [ 
+			encoder genNoMustBeBooleanFlag.
+			branch backendCondition
+				ifTrue: [ encoder genBranchPopFalseLong: distance ]
+				ifFalse: [ encoder genBranchPopTrueLong: distance ] ]
+		ifTrue: [ "
+			branch backendCondition
+				ifTrue: [ encoder genBranchPopFalse: distance ]
+				ifFalse: [ encoder genBranchPopTrue: distance ]" ]".
+	branch hasDeoptInfo ifTrue: [ self genDeoptInfo: branch ].
+]
+
+{ #category : #jumps }
+SoBytecodeBuilder >> traverseBranchIfNotInstanceOf: branch [
+	| distance next |
+	distance := self jumpForwardSizeFrom: branch basicBlock to: branch targetBasicBlock.
+	(distance = 0 and: [ branch backEndJumpSize = 1 ]) ifTrue: [ ^ encoder genPop ].
+	next := branch codeNode basicBlocks at: (branch codeNode basicBlocks indexOf: branch basicBlock) + 1.
+	self 
+		assert: (branch trueBasicBlock = next or: [branch falseBasicBlock = next])
+		description: 'Boolean branch incorrect'.
 	branch backendCondition
-			ifTrue: [ encoder genBranchPopFalse: distance ]
-			ifFalse: [ encoder genBranchPopTrue: distance ].
+				ifTrue: [ encoder genBranchIfInstanceOf: (branch literalIndexForBuilder: self) distance: distance ]
+				ifFalse: [ encoder genBranchIfNotInstanceOf: (branch literalIndexForBuilder: self) distance: distance ]
 ]
 
-{ #category : #'jump - generation' }
+{ #category : #jumps }
+SoBytecodeBuilder >> traverseImmediateTrap: trap [
+]
+
+{ #category : #jumps }
+SoBytecodeBuilder >> traverseJumpAhead: jumpAhead [ 
+	jumpAhead backEndJumpSize = 0 ifTrue: [ ^ self "no jump" ].
+	encoder genJump: (self jumpForwardSizeFrom: jumpAhead basicBlock to: jumpAhead targetBasicBlock)
+]
+
+{ #category : #jumps }
 SoBytecodeBuilder >> traverseReturn: ret [
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseSmalltalkBackjump: backjump [
-	self genDeoptInfo: backjump.
-	encoder genJump: (self backjumpSizeFrom: backjump basicBlock to: backjump targetBasicBlock) negated.
-]
-
-{ #category : #'jump - generation' }
-SoBytecodeBuilder >> traverseSmalltalkBooleanBranch: branch [
-	self traversePipelinedBooleanBranch: branch.
-	self genDeoptInfo: branch 
 ]
 
 { #category : #results }

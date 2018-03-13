@@ -1,17 +1,20 @@
 "
-My instances are branches. Depending on a condition (based on subclasses), the execution flow goes to basicBlock1 or basicBlock2.
+Common superclass of the branches. The branch is an operation which moves the execution flow to a basic block or another based on a condition.
 
-trueBasicBlock <BasicBlock>
-falseBasicBlock <BasicBlock>
-backendCondition <Boolean> annotation used by the backend to find out in which sens it will generate the branch to get the most performance.
+    Instance Variables
+	expression:		<ScorchNode> 
+	falseBasicBlock:		<BasicBlock> reached if expression is false.
+	trueBasicBlock:		<BasicBlock> reached if expression is true.
+	backendCondition <Boolean> used at bytecode gen time to find out if it will be compiled to a jumpTrue or jumpFalse (or jumpIfInstanceOf: / jumpifNotInstanceOf:.
+
 "
 Class {
 	#name : #SoAbsBranch,
 	#superclass : #SoAbsJump,
 	#instVars : [
 		'expression',
-		'trueBasicBlock',
 		'falseBasicBlock',
+		'trueBasicBlock',
 		'backendCondition'
 	],
 	#category : #'Scorching-Nodes-CFG Instructions'
@@ -55,12 +58,6 @@ SoAbsBranch >> basicTrueBasicBlock: bb [
 	bb addPredecessor: basicBlock.
 ]
 
-{ #category : #'bytecode generation' }
-SoAbsBranch >> bytecodeSizeFor: distance bytecodeBuilder: builder [
-	distance = 0 ifTrue: [ ^ 1 ].
-	^ 3 + 4
-]
-
 { #category : #accessing }
 SoAbsBranch >> expression [
 	<generated>
@@ -76,6 +73,7 @@ SoAbsBranch >> expression: aValue [
 
 { #category : #accessing }
 SoAbsBranch >> falseBasicBlock [
+	<generated>
 	^ falseBasicBlock
 ]
 
@@ -96,11 +94,6 @@ SoAbsBranch >> maybeWorthSplitting [
 	^ true
 ]
 
-{ #category : #accessing }
-SoAbsBranch >> popSize [
-	^  1
-]
-
 { #category : #'cfg edition' }
 SoAbsBranch >> replaceSuccessor: succ by: bb [
 	trueBasicBlock == succ ifTrue: [ ^ self trueBasicBlock: bb ].
@@ -108,31 +101,15 @@ SoAbsBranch >> replaceSuccessor: succ by: bb [
 	
 ]
 
+{ #category : #accessing }
+SoAbsBranch >> splitSubNode [
+	^ expression 
+]
+
 { #category : #'graph edition' }
 SoAbsBranch >> subNodes [
 	<generated>
 	^ {expression}
-]
-
-{ #category : #'graph edition' }
-SoAbsBranch >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	^aBlock value: expression.
-	
-]
-
-{ #category : #'graph edition' }
-SoAbsBranch >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: expression
-]
-
-{ #category : #'graph edition' }
-SoAbsBranch >> subNodesSize [
-	<generated>
-	^ 1
 ]
 
 { #category : #accessing }
@@ -149,6 +126,7 @@ SoAbsBranch >> targetBasicBlock [
 
 { #category : #accessing }
 SoAbsBranch >> trueBasicBlock [
+	<generated>
 	^ trueBasicBlock
 ]
 

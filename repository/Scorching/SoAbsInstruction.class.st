@@ -15,11 +15,6 @@ Class {
 }
 
 { #category : #accessing }
-SoAbsInstruction >> access [
-	^ self expression
-]
-
-{ #category : #accessing }
 SoAbsInstruction >> basicBlock [
 	<generated>
 	^ basicBlock
@@ -41,11 +36,6 @@ SoAbsInstruction >> dominates: anotherInstruction [
 	^ self == anotherInstruction or: [ self strictlyDominates: anotherInstruction ]
 ]
 
-{ #category : #testing }
-SoAbsInstruction >> inBasicBlock: bb1 or: bb2 [
-	^ basicBlock = bb1 or: [ basicBlock = bb2 ]
-]
-
 { #category : #dominator }
 SoAbsInstruction >> isDominatedByBasicBlock: bb [
 	^ bb dominatesInstr: self
@@ -53,7 +43,7 @@ SoAbsInstruction >> isDominatedByBasicBlock: bb [
 
 { #category : #'graph edition' }
 SoAbsInstruction >> postCopy [
-	self subNodesDo: [ :each | each addUse: self ].
+	self subNodes do: [ :each | each addUse: self ].
 	self hasDeoptInfo ifTrue: [ self deoptInfo: self deoptInfo copy ]
 ]
 

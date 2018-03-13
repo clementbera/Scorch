@@ -32,7 +32,7 @@ SoRange class >> fullRange [
 SoRange >> acceptArray: array [
 	minConstant >= 1 ifFalse: [ ^ false ].
 	maxArraySize ifNotNil: 
-		[ maxArraySize receiver ~= array ifTrue: [ ^ false ]. "swapping may solve this problem later..."
+		[ maxArraySize receiver ~= array ifTrue: [ ^ false ].
 		  ^ maxConstant <= 0 ].
 	array hasSizeInformation ifFalse: [ ^ false ].
 	^ maxConstant <= array sizeInformation
@@ -44,24 +44,17 @@ SoRange >> actualMaxVal [
 	^ maxConstant + (maxArraySize ifNil: [ 0 ] ifNotNil: [ maxArraySize maxSmi ])
 ]
 
-{ #category : #accessing }
-SoRange >> actualMinVal [
-	"the max can be < (sz = 0 + 0 for ex) but in that case it cannot be reached"
-	^ minConstant
-]
-
 { #category : #operation }
 SoRange >> addRange: range onOverflow: aBlock [
 	(maxArraySize notNil and: [ range maxArraySize notNil ]) ifTrue: [ 
-		"For arithmetic - complete resolution"
 		^ SoRange new
-			minConstant: self actualMinVal + range actualMinVal;
-			maxConstant: self actualMaxVal + range actualMaxVal;
+			minConstant: minConstant + range minConstant;
+			maxConstant: maxConstant + range maxConstant + maxArraySize maxSmi + range maxArraySize maxSmi;
 			onOverflow: aBlock;
 			yourself ].
 	"This second case is for loop with iterator + cst"
 	^ SoRange new
-		minConstant: self actualMinVal + range actualMinVal;
+		minConstant: minConstant + range minConstant;
 		maxConstant: maxConstant + range maxConstant;
 		maxArraySize: (maxArraySize ifNil: [ range maxArraySize ]);
 		onOverflow: aBlock;
@@ -87,12 +80,12 @@ SoRange >> alwaysGreaterThan: range [
 
 { #category : #testing }
 SoRange >> alwaysLessOrEqualThan: range [
-	^ self actualMaxVal  <= range actualMinVal
+	^ self actualMaxVal  <= range minConstant
 ]
 
 { #category : #testing }
 SoRange >> alwaysLessThan: range [
-	^ self actualMaxVal < range actualMinVal
+	^ self actualMaxVal < range minConstant
 ]
 
 { #category : #testing }
@@ -117,29 +110,8 @@ SoRange >> intersection: range [
 ]
 
 { #category : #testing }
-SoRange >> isByte [
-	maxArraySize ifNotNil: [ ^ false ].
-	^ minConstant >= 0 and: [ maxConstant <= 255 ]
-]
-
-{ #category : #testing }
 SoRange >> isNegative [
 	^ maxConstant <= 0 and: [ maxArraySize isNil ]
-]
-
-{ #category : #testing }
-SoRange >> isNonMinusOne [
-	^ minConstant >= 0 or: [ maxConstant < -1 and: [ maxArraySize isNil ] ] 
-]
-
-{ #category : #testing }
-SoRange >> isNonSmiMinVal [
-	^ minConstant > SmallInteger minVal
-]
-
-{ #category : #testing }
-SoRange >> isNonZero [
-	^ minConstant > 0 or: [ maxConstant < 0 and: [ maxArraySize isNil ] ] 
 ]
 
 { #category : #testing }
@@ -150,12 +122,6 @@ SoRange >> isPositive [
 { #category : #testing }
 SoRange >> isPositiveOrNegative [
 	^ self isPositive or: [ self isNegative ]
-]
-
-{ #category : #testing }
-SoRange >> isSolved [
-	maxArraySize ifNotNil: [ ^ false ].
-	^ minConstant = maxConstant
 ]
 
 { #category : #accessing }
@@ -194,37 +160,10 @@ SoRange >> minConstant: aValue [
 	minConstant := aValue
 ]
 
-{ #category : #operation }
-SoRange >> mulRange: range onOverflow: aBlock [
-	"For arithmetic - complete resolution"
-	| case1 case2 case3 case4 min max |
-	"compute overflow early to avoid large int computations"
-	case1 := self actualMinVal * range actualMinVal.
-	case1 class == SmallInteger ifFalse: [ aBlock value ].
-	case2 := self actualMinVal * range actualMaxVal.
-	case2 class == SmallInteger ifFalse: [ aBlock value ].
-	case3 := self actualMaxVal * range actualMaxVal.
-	case3 class == SmallInteger ifFalse: [ aBlock value ].
-	case4 := self actualMinVal * range actualMaxVal.
-	case4 class == SmallInteger ifFalse: [ aBlock value ].
-	min := ((case1 min: case2) min: case3) min: case4.
-	max := ((case1 max: case2) max: case3) max: case4.
-	^ SoRange new
-		minConstant: min;
-		maxConstant: max;
-		yourself
-
-]
-
 { #category : #testing }
 SoRange >> onOverflow: aBlock [
 	self actualMaxVal class == SmallInteger ifFalse: [ aBlock value ].
 	minConstant class == SmallInteger ifFalse: [ aBlock value ]
-]
-
-{ #category : #accessing }
-SoRange >> s [
-	^ minConstant
 ]
 
 { #category : #testing }
@@ -253,22 +192,17 @@ SoRange >> shiftRight: range [
 		yourself
 ]
 
-{ #category : #accessing }
-SoRange >> solvedConstant [
-	^ minConstant 
-]
-
 { #category : #operation }
 SoRange >> subRange: range onOverflow: aBlock [
 	range maxArraySize ifNotNil: [ 
 		^ SoRange new
-			minConstant: self actualMinVal - range actualMaxVal;
-			maxConstant: self actualMaxVal - range actualMinVal;
+			minConstant: minConstant - range maxConstant - range maxArraySize maxSmi;
+			maxConstant: self actualMaxVal - range minConstant;
 			onOverflow: aBlock;
 			yourself ].
 	"This second case is for loops with iterator - constant"
 	^ SoRange new
-		minConstant: self actualMinVal - range maxConstant;
+		minConstant: minConstant - range maxConstant;
 		maxConstant: maxConstant - range minConstant;
 		maxArraySize: maxArraySize;
 		onOverflow: aBlock;

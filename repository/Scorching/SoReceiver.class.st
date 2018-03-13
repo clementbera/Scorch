@@ -18,11 +18,6 @@ SoReceiver >> asDeopt [
 ]
 
 { #category : #testing }
-SoReceiver >> cannotBeForwarded [
-	^ true
-]
-
-{ #category : #testing }
 SoReceiver >> isReceiver [
 	^ true
 ]

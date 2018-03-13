@@ -13,7 +13,8 @@ Class {
 		'codeNode'
 	],
 	#pools : [
-		'SoMagicConstants'
+		'SoMagicConstants',
+		'SoOptimizationSettingConstants'
 	],
 	#category : #'Scorching-Pass-FrontEnd'
 }
@@ -38,15 +39,6 @@ SoOptimizer >> basicOptimizedContext: context [
 					^ context method markOptimizedBit. ].
 ]
 
-{ #category : #'private- opt' }
-SoOptimizer >> cfgPhase [
-	"cfg super phase with optimisations on loops. Needs to be improved..."
-	self run: SoLICM.
-	SoGoldLoopOptimiser new runOn: codeNode retryAfter: [self corePhase].
-	SoDiamondOptimiser new runOn: codeNode untilFixedPointOrRetryAfter: [ self corePhase ].
-	
-]
-
 { #category : #accessing }
 SoOptimizer >> codeNode [
 	<generated>
@@ -59,34 +51,6 @@ SoOptimizer >> codeNode: aValue [
 	codeNode := aValue
 ]
 
-{ #category : #'private- opt' }
-SoOptimizer >> corePhase [
-	"Core optimisation super phase : requires inlining and other optimisations to perform well,
-	 Does simple clean-ups and canonicalizations"
-	{SoSubexpressionElimination.
-	 SoInliner .
-	 SoDeadBranchElimination .
-	 SoEscapeOptimisation .
-	 SoBranchSplitter .
-	 SoSubexpressionElimination . "Twice because so important"
-	 SoDeadCodeElimination } do: [ :pass | self run: pass ]
-]
-
-{ #category : #'private- opt' }
-SoOptimizer >> eSSADuring: aBlock [
-	SoExtendSSA new extendSSAFor: codeNode during: aBlock
-]
-
-{ #category : #'private- opt' }
-SoOptimizer >> eSSAPhase [
-	"e-SSA optimisation super phase : specialized on range analysis.
-	 Also performs sparse conditional and swapping of comparison to enable more range optimisations"
-	self eSSADuring: [ 
-		self corePhase.
-		self run: SoSparseConditionalAndSwap ].
-	self eSSADuring: [ self corePhase ].
-]
-
 { #category : #private }
 SoOptimizer >> getFirstCodeNode: ctxtTripping [
 	| ctxt |
@@ -96,27 +60,6 @@ SoOptimizer >> getFirstCodeNode: ctxtTripping [
 	{SoReorderBasicBlocks . SoFindDominators . SoSimplifyPhis} do: [ :each |
 		each new runOn: codeNode ].
 	^ codeNode
-]
-
-{ #category : #'private- opt' }
-SoOptimizer >> initialInliningPhase [
-	"Super phase :  inlining with extra bonus so the optimizer have something to work with."
-	self run: SoInitialInliner.
-	"we do some clean-ups to avoid future pass to deal with dead code / too many deopt info."
-	self run: SoSubexpressionElimination.
-	self run: SoDeadBranchElimination 
-]
-
-{ #category : #'private- opt' }
-SoOptimizer >> optimizeCodeNode [
-	"Current standard planning. Need better loop phases. Need to investigate more which pass cost and which does not."
-	self initialInliningPhase.
-	self corePhase.
-	self eSSAPhase.
-	self cfgPhase.
-	self eSSAPhase.
-	self cfgPhase.
-	self corePhase.
 ]
 
 { #category : #public }
@@ -142,21 +85,25 @@ SoOptimizer >> origin: aValue [
 ]
 
 { #category : #private }
+SoOptimizer >> passes [
+	^ ActiveO
+]
+
+{ #category : #private }
 SoOptimizer >> postponeOptimization [
 	self flag: #TODO.
 	'TimeOut' logCr.
 ]
 
-{ #category : #'private- opt' }
-SoOptimizer >> run: optClass [
-	optClass new runOn: codeNode
-]
-
 { #category : #private }
 SoOptimizer >> uncheckedOptimize: contextTripping [
 	codeNode := self getFirstCodeNode: contextTripping.
-	self optimizeCodeNode.
+	self passes do: [ :pass | 
+		pass new runOn: codeNode.
+		"Transcript show: '[' , pass name , ';', (DateAndTime now - origin) asMilliSeconds printString , 'ms]'; cr." ].
 	codeNode generateAndInstall.
+	"Transcript show: 'Opt done in: ' , (DateAndTime now - origin) asMilliSeconds printString , 'ms - '."
+	"contextTripping method markOptimizedBit."
 	codeNode compiledCode markOptimizedBit.
 	
 ]

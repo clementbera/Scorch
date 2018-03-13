@@ -24,48 +24,45 @@ Class {
 
 { #category : #expand }
 SoExpandAndReduce >> branchFromTrap: trap [
-	^ trap isTrapIfNotInstanceOf 
-		ifTrue: [ SoInstanceOfBranch new
-			behaviors: trap behaviors;
-			expression: trap expression;
-			yourself ]
-		ifFalse: [ SoReadOnlyBranch new 
-			expression: trap expression;
-			yourself ]
-	
+	(trap isFalseTrap or: [ trap isTrueTrap ])
+		ifTrue: [ ^ SoBooleanBranch new
+				expression: trap expression;
+				yourself  ].
+	^ SoBranchIfNotInstanceOf new
+		behaviors: trap behaviors;
+		expression: trap expression;
+		yourself
 ]
 
 { #category : #expand }
 SoExpandAndReduce >> expandMacros [
-	[macros isEmpty] whileFalse: [ 
-		| next |
-		next := macros removeFirst.
-		self expandTrapIf: next ].
+	[macros isEmpty] whileFalse: [ self expandTrapIfNotInstanceOf: macros removeFirst ].
 ]
 
 { #category : #expand }
-SoExpandAndReduce >> expandTrapIf: trap [
+SoExpandAndReduce >> expandTrapIfNotInstanceOf: trap [
 	"Attempts to merge trap metadata...
 	 Hopefully due to inlined primitive (<, <=, etc.)
 	 and LICM many traps are next to each other."
 	| traps instr |
 	traps := OrderedCollection with: trap.
 	instr := trap.
-	[ instr prevInstr notNil and: [ instr prevInstr isTrapIf ] ] whileTrue: 
+	[ instr prevInstr notNil and: [ instr prevInstr isTrapIfNotInstanceOf ] ] whileTrue: 
 		[ instr := instr prevInstr.
 		  macros remove: instr.
 		  traps add: instr ].
-	self expandTrapsIf: traps
+	self expandTrapsIfNotInstanceOf: traps
 ]
 
 { #category : #expand }
-SoExpandAndReduce >> expandTrapsIf: traps [
+SoExpandAndReduce >> expandTrapsIfNotInstanceOf: traps [
 	| prevBBs trapBB deoptInfo |
 	"last trap dominates the other"
-	deoptInfo := traps last deoptInfo copy.
+	deoptInfo := traps last deoptInfo. "cached cause splitting remove the reference"
 	prevBBs := traps collect: [ :trap | SoBasicBlockSplitter new splitBasicBlockAt: trap ].
 	trapBB := self newTrapBasicBlock: deoptInfo dominator: prevBBs last.
-	traps withIndexDo: [:trap :index | self patchTrap: trap prevBB: (prevBBs at: index) trapBB: trapBB ].
+	deoptInfo sunkObjects do: [ :s | s subNodesAddUses ].
+	traps withIndexDo: [:trap :index | self patchTrap: trap prevBB: (prevBBs at: index) trapBB: trapBB ]
 	
 ]
 
@@ -114,24 +111,17 @@ SoExpandAndReduce >> noPhiSplitReturn: ret [
 
 { #category : #expand }
 SoExpandAndReduce >> patchTrap: trap prevBB: prevBB trapBB: trapBB [
-	| branch |
-	trap isTrapIfNotInstanceOf 
-		ifTrue: [ 
-			branch := SoInstanceOfBranch new
-				basicBlock: prevBB;
-				behaviors: trap behaviors;
-				expression: trap expression;
-				yourself.
-			branch trueBasicBlock: trap basicBlock.
-			branch falseBasicBlock: trapBB ]
-		ifFalse: [ 
-			branch := SoReadOnlyBranch new 
-				basicBlock: prevBB;
-				expression: trap expression;
-				yourself.
-			branch trueBasicBlock: trapBB.
-			branch falseBasicBlock: trap basicBlock ].
-	prevBB lastInstr replaceBy: branch.
+	| jumpIfNotInstance |
+	jumpIfNotInstance := self branchFromTrap: trap.
+	prevBB lastInstr replaceBy: jumpIfNotInstance.
+	trap isTrueTrap 
+		ifTrue: 
+			[ jumpIfNotInstance trueBasicBlock: trap basicBlock.
+			  jumpIfNotInstance falseBasicBlock: trapBB ]
+		ifFalse: 
+			[ jumpIfNotInstance trueBasicBlock: trapBB.
+			  jumpIfNotInstance falseBasicBlock: trap basicBlock ]
+	
 ]
 
 { #category : #accessing }
@@ -203,10 +193,5 @@ SoExpandAndReduce >> traverseReturn: ret [
 
 { #category : #traversing }
 SoExpandAndReduce >> traverseTrapIfNotInstanceOf: trap [
-	macros add: trap
-]
-
-{ #category : #traversing }
-SoExpandAndReduce >> traverseTrapIfReadOnly: trap [
 	macros add: trap
 ]

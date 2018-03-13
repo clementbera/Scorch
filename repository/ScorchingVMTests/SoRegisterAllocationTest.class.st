@@ -1,7 +1,7 @@
 Class {
 	#name : #SoRegisterAllocationTest,
 	#superclass : #TestCase,
-	#category : #'ScorchingVMTests-RegAlloc'
+	#category : #ScorchingVMTests
 }
 
 { #category : #'tests - stress' }

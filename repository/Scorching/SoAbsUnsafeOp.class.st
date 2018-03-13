@@ -6,6 +6,10 @@ These operations never check for receiver or arguments types. Their types have t
 Class {
 	#name : #SoAbsUnsafeOp,
 	#superclass : #SoAbsOp,
+	#pools : [
+		'SoPrimitiveConstants',
+		'SoUnsafeOpConstants'
+	],
 	#category : #'Scorching-Nodes-Op'
 }
 
@@ -31,18 +35,7 @@ SoAbsUnsafeOp class >> withReceiver: receiver arguments: args [
 ]
 
 { #category : #testing }
-SoAbsUnsafeOp >> canBeCSE [
-	^ true
-]
-
-{ #category : #testing }
 SoAbsUnsafeOp >> canBeRemovedIfNoUses [
-	^ true
-]
-
-{ #category : #testing }
-SoAbsUnsafeOp >> cannotBeForwarded [
-	"By default this answers boolean or smi so..."
 	^ true
 ]
 

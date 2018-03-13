@@ -73,9 +73,3 @@ SoCreateNLRFullBlock >> nlrPhi: aValue [
 	<generated>
 	nlrPhi := aValue
 ]
-
-{ #category : #'graph edition' }
-SoCreateNLRFullBlock >> removeInstr [
-	nlrPhi removeInput: fakeConstant basicBlock: fakeBasicBlock.
-	super removeInstr
-]

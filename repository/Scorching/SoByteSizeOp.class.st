@@ -20,5 +20,12 @@ SoByteSizeOp >> maxSmi [
 
 { #category : #primitive }
 SoByteSizeOp >> primitiveNumber [
-	^ 1002
+	<script>
+	^ UByteSize
+]
+
+{ #category : #primitive }
+SoByteSizeOp >> safePrimitiveNumber [
+	<script>
+	^ Size
 ]

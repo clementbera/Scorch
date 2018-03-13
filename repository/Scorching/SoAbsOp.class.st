@@ -35,7 +35,7 @@ SoAbsOp >> basicReplaceSubNode: node by: anotherNode [
 	receiver == node ifTrue: [ 
 		receiver := anotherNode.
 		^ anotherNode addUse: self ].
-	arguments at: (arguments indexOf: node) put: anotherNode.
+	arguments at: (arguments identityIndexOf: node) put: anotherNode.
 	anotherNode addUse: self.
 ]
 
@@ -68,27 +68,4 @@ SoAbsOp >> receiver: aValue [
 SoAbsOp >> subNodes [
 	<generated>
 	^ {receiver} , arguments
-]
-
-{ #category : #'graph edition' }
-SoAbsOp >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	(aBlock value: receiver) ifTrue: [^true].
-	^arguments anySatisfy: aBlock.
-	
-]
-
-{ #category : #'graph edition' }
-SoAbsOp >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: receiver.
-	arguments do: aBlock
-]
-
-{ #category : #'graph edition' }
-SoAbsOp >> subNodesSize [
-	<generated>
-	^ 1 + arguments size
 ]

@@ -4,11 +4,6 @@ Class {
 	#category : #'Scorching-Nodes-SmiOp'
 }
 
-{ #category : #testing }
-SoSmiEqualOp >> isSmiEqualOp [
-	^ true
-]
-
 { #category : #traversing }
 SoSmiEqualOp >> isTraversedBy: aTraverser [
 	<generated>
@@ -17,10 +12,12 @@ SoSmiEqualOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiEqualOp >> primitiveNumber [
-	^ 2036
+	<script>
+	^ USmiEqual
 ]
 
 { #category : #primitive }
 SoSmiEqualOp >> safePrimitiveNumber [
-	^ 7
+	<script>
+	^ Equal
 ]

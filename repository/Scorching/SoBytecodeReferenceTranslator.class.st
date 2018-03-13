@@ -41,14 +41,26 @@ SoBytecodeReferenceTranslator >> traverseArg: node [
 ]
 
 { #category : #traversing }
-SoBytecodeReferenceTranslator >> traverseBodyInstruction: node [
+SoBytecodeReferenceTranslator >> traverseClassOp: node [
 	<script>
-	node backend genUnsafeOpReference: node with: builder
+	node backend genClassOpReference: node with: builder
 ]
 
 { #category : #traversing }
 SoBytecodeReferenceTranslator >> traverseConstant: node [
 	builder genPushConstant: node
+]
+
+{ #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseContextInstVar: node [
+	<script>
+	node backend genContextInstVarReadReference: node with: builder
+]
+
+{ #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseCreateArray: node [
+	<script>
+	node backend genCreateArrayReference: node with: builder
 ]
 
 { #category : #traversing }
@@ -64,12 +76,26 @@ SoBytecodeReferenceTranslator >> traverseCreateFullBlock: node [
 ]
 
 { #category : #traversing }
-SoBytecodeReferenceTranslator >> traverseInstantiation: node [
-	node backend genInstantiationReference: node with: builder
+SoBytecodeReferenceTranslator >> traverseCreateTempVect: node [
+	<script>
+	node backend genCreateTempVectReference: node with: builder
 ]
 
 { #category : #traversing }
-SoBytecodeReferenceTranslator >> traverseMutableLiteralRead: node [
+SoBytecodeReferenceTranslator >> traverseGlobal: node [
+	<script>
+	node backend genGlobalReadReference: node with: builder
+]
+
+{ #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseInstVar: node [
+	<script>
+	node backend genInstVarReadReference: node with: builder
+]
+
+{ #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseMutableLiteral: node [
+	<script>
 	node backend genMutableLiteralReadReference: node with: builder
 ]
 
@@ -80,11 +106,29 @@ SoBytecodeReferenceTranslator >> traversePhi: node [
 ]
 
 { #category : #traversing }
+SoBytecodeReferenceTranslator >> traversePointerEqualsOp: node [
+	<script>
+	node backend genPointerEqualsOpReference: node with: builder
+]
+
+{ #category : #traversing }
 SoBytecodeReferenceTranslator >> traverseReceiver: node [
 	^ builder genPushReceiver
 ]
 
 { #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseRemoteTemp: node [
+	<script>
+	node backend genRemoteTempReadReference: node with: builder
+]
+
+{ #category : #traversing }
 SoBytecodeReferenceTranslator >> traverseSend: node [
 	node backend genSendReference: node with: builder
+]
+
+{ #category : #traversing }
+SoBytecodeReferenceTranslator >> traverseUnsafeOp: node [
+	<script>
+	node backend genUnsafeOpReference: node with: builder
 ]

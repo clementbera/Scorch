@@ -1,5 +1,5 @@
 "
-Pretty prints the CFG in a nice way. 
+Pretty prints the Cfg in a nice way. 
 
 On code you can use the Roassal visualisation too
 "
@@ -45,6 +45,61 @@ SoPrettyPrinter >> printInstruction: instr on: s [
 	self printInstruction: instr.
 ]
 
+{ #category : #private }
+SoPrettyPrinter >> printStore: store [
+	stream space.
+	store ignoreStoreCheck ifTrue: [ stream <<':U' ].
+	stream << ':= '.
+	store expression shortPrintOn: stream.
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseBackjump: bj [
+	stream << 'backTo: '.
+	stream << bj targetBasicBlock printingNumber
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseBooleanBranch: branch [
+	branch expression shortPrintOn: stream.
+	stream space.
+	stream 
+		<< 'ifTrue: '
+		<< branch trueBasicBlock printingNumber
+		<< ' ifFalse: '
+		<< branch falseBasicBlock printingNumber.
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseBranchIfNotInstanceOf: branch [
+	branch expression shortPrintOn: stream.
+	stream << ' ifNotInstanceOf: '.
+	branch behaviors size = 1 
+		ifTrue: [ branch behaviors anyOne printOn: stream ] 
+		ifFalse: [ branch behaviors printOn: stream ].
+	stream 
+		<< ' goTo: '
+		<< branch trueBasicBlock printingNumber
+		<< ' else: '
+		<< branch falseBasicBlock printingNumber.
+	
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseContextInstVar: instVar [
+	stream << 'Ctxt:'.
+	self traverseInstVar: instVar.
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseCreateArray: aCreateArray [
+	stream nextPut: ${.
+	aCreateArray values do: [ :e |
+		e shortPrintOn: stream ]
+		separatedBy: [ stream space. stream nextPut: $. . stream space ].
+	stream nextPut: $}.
+]
+
 { #category : #traversing }
 SoPrettyPrinter >> traverseCreateFullBlock: fullBlock [
 	stream <<'-[-'.
@@ -65,10 +120,19 @@ SoPrettyPrinter >> traverseCreateNLRFullBlock: fullBlock [
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traverseEnsureEnoughSlots: ensure [
-	stream << 'Ensure '.
-	ensure numSlots shortPrintOn: stream.
-	stream << ' slots'.
+SoPrettyPrinter >> traverseCreateTempVect: vect [
+	stream 
+		<< 'new TempVect('
+		<< vect vectorSize asString
+		<< ')'. 
+]
+
+{ #category : #traversing }
+SoPrettyPrinter >> traverseEnsureEnoughSpace: instr [
+	stream 
+		<< 'Ensure '
+		<< instr numWords asString
+		<< ' available'. 
 ]
 
 { #category : #traversing }
@@ -84,23 +148,22 @@ SoPrettyPrinter >> traverseForwardBasicBlock: basicBlock [
 ]
 
 { #category : #traversing }
+SoPrettyPrinter >> traverseGlobal: global [
+	stream << 'Gbl:' << global assoc key. 
+	global isWrite ifTrue: [ self printStore: global ].
+]
+
+{ #category : #traversing }
 SoPrettyPrinter >> traverseImmediateTrap: trap [
 	stream << 'trap'.
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traverseInstanceOfBranch: branch [
-	branch expression shortPrintOn: stream.
-	stream << ' ifInstanceOf: '.
-	branch behaviors size = 1 
-		ifTrue: [ branch behaviors anyOne printOn: stream ] 
-		ifFalse: [ branch behaviors printOn: stream ].
-	stream 
-		<< ' goTo: '
-		<< branch trueBasicBlock printingNumber
-		<< ' else: '
-		<< branch falseBasicBlock printingNumber.
-	
+SoPrettyPrinter >> traverseInstVar: instVar [
+	instVar object shortPrintOn: stream.
+	stream << '%'. 
+	instVar index printOn: stream.
+	instVar isWrite ifTrue: [ self printStore: instVar ].
 ]
 
 { #category : #traversing }
@@ -122,47 +185,6 @@ SoPrettyPrinter >> traverseLoopHead: loopHead [
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traverseMutableLiteralRead: read [
-	stream << 'ReadMutableLit: '.
-	read literal printOn: stream.
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseNewColon: inst [
-	self traversePointerNew: inst.
-	stream << ': '.
-	inst sized shortPrintOn: stream
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseNoInterruptBackjump: bj [
-	stream << 'backTo: '.
-	stream << bj targetBasicBlock printingNumber
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseObjectRead: read [
-	read object shortPrintOn: stream.
-	stream << ' ' << ((read class name allButFirst: 2) allButLast: 3).
-	stream << ':'.
-	stream space.
-	read index shortPrintOn: stream.
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseObjectWrite: write [
-	write object shortPrintOn: stream.
-	write storeCheck ifTrue: [ stream << ' <sc>' ].
-	stream << ' '.
-	stream << ((write class name allButFirst: 2) allButLast: 4).
-	stream << ': '.
-	write index shortPrintOn: stream.
-	stream << ' put: '.
-	stream space.
-	write expression shortPrintOn: stream.
-]
-
-{ #category : #traversing }
 SoPrettyPrinter >> traversePhi: phi [
 	stream << 'phi: '.
 	phi inputsAndBasicBlocksDo: [ :input :block |
@@ -180,39 +202,18 @@ SoPrettyPrinter >> traversePi: pi [
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traversePipelinedBooleanBranch: branch [
-	branch expression shortPrintOn: stream.
-	stream space.
-	stream 
-		<< '<pipe> ifTrue: '
-		<< branch trueBasicBlock printingNumber
-		<< ' ifFalse: '
-		<< branch falseBasicBlock printingNumber.
+SoPrettyPrinter >> traversePointerEqualsOp: pointerEquals [
+	pointerEquals receiver shortPrintOn: stream.
+	stream space; nextPutAll: #==; space.
+	pointerEquals firstArg shortPrintOn: stream
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traversePointerNew: inst [
-	inst behavior name printOn: stream.
-	inst needsInit 
-		ifTrue: [ stream << ' <init> ' ]
-		ifFalse: [ stream << ' <noInit> ' ].
-	stream << (inst class name allButFirst: 2).
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traversePossibleRoot: op [
-	op expression shortPrintOn: stream.
-	stream << ' possibleRoot'
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseReadOnlyBranch: branch [
-	branch expression shortPrintOn: stream.
-	stream 
-		<< ' ifReadOnly: '
-		<< branch trueBasicBlock printingNumber
-		<< ' ifWritable: '
-		<< branch falseBasicBlock printingNumber.
+SoPrettyPrinter >> traverseRemoteTemp: remote [
+	remote tempVector shortPrintOn: stream.
+	stream << '$'. 
+	remote remoteIndex printOn: stream.
+	remote isWrite ifTrue: [ self printStore: remote ].
 ]
 
 { #category : #traversing }
@@ -237,17 +238,6 @@ SoPrettyPrinter >> traverseSend: send [
 ]
 
 { #category : #traversing }
-SoPrettyPrinter >> traverseSmalltalkBooleanBranch: branch [
-	branch expression shortPrintOn: stream.
-	stream space.
-	stream 
-		<< 'ifTrue: '
-		<< branch trueBasicBlock printingNumber
-		<< ' ifFalse: '
-		<< branch falseBasicBlock printingNumber.
-]
-
-{ #category : #traversing }
 SoPrettyPrinter >> traverseTrapIfNotInstanceOf: node [
 	stream << 'Ensure '.	
 	node expression shortPrintOn: stream.
@@ -255,19 +245,6 @@ SoPrettyPrinter >> traverseTrapIfNotInstanceOf: node [
 	node behaviors size = 1 
 		ifTrue: [ node behaviors anyOne printOn: stream ] 
 		ifFalse: [ node behaviors printOn: stream ].
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseTrapIfReadOnly: node [
-	stream << 'Ensure '.
-	node expression shortPrintOn: stream.
-	stream << ' isWritable'.
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseUnforward: op [
-	op expression shortPrintOn: stream.
-	stream << ' ' << (op class name allButFirst: 2) asLowercase 
 ]
 
 { #category : #traversing }
@@ -279,15 +256,4 @@ SoPrettyPrinter >> traverseUnsafeOp: op [
 	op arguments 
 		do: [ :arg | arg shortPrintOn: stream ] 
 		separatedBy: [ stream space ].
-]
-
-{ #category : #traversing }
-SoPrettyPrinter >> traverseYoungBranch: branch [
-	branch expression shortPrintOn: stream.
-	stream space.
-	stream 
-		<< 'ifYoung: '
-		<< branch trueBasicBlock printingNumber
-		<< ' ifOld: '
-		<< branch falseBasicBlock printingNumber.
 ]

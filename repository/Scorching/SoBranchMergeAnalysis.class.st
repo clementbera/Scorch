@@ -7,7 +7,7 @@ In a standard diamond, there is only one merge point. In this case I answer an i
 Class {
 	#name : #SoBranchMergeAnalysis,
 	#superclass : #SoGraphTraverser,
-	#category : #'Scorching-Pass-Split'
+	#category : #'Scorching-Pass-Flow'
 }
 
 { #category : #private }

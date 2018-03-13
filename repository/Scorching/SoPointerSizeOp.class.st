@@ -20,5 +20,12 @@ SoPointerSizeOp >> maxSmi [
 
 { #category : #primitive }
 SoPointerSizeOp >> primitiveNumber [
-	^ 1001
+	<script>
+	^ UPointerSize
+]
+
+{ #category : #primitive }
+SoPointerSizeOp >> safePrimitiveNumber [
+	<script>
+	^ Size
 ]

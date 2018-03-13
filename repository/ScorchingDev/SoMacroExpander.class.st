@@ -20,21 +20,6 @@ SoMacroExpander >> expandSubNodes: instVarName on: stream [
 	self subclassResponsibility
 ]
 
-{ #category : #'macro-expansions' }
-SoMacroExpander >> expandSubNodesAnySatisfy: instVarName last: isLast on: stream [
-	self subclassResponsibility
-]
-
-{ #category : #'macro-expansions' }
-SoMacroExpander >> expandSubNodesDo: instVarName on: stream [
-	self subclassResponsibility
-]
-
-{ #category : #'macro-expansions' }
-SoMacroExpander >> expandSubNodesSize: instVarName on: stream [
-	self subclassResponsibility
-]
-
 { #category : #generating }
 SoMacroExpander >> generateDefUseSetter: varName class: aClass [
 	self subclassResponsibility

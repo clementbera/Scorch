@@ -19,7 +19,7 @@ SoSmiBitShiftRightOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiBitShiftRightOp >> primitiveNumber [
-	^ 2020
+	^ USmiBitShiftRight
 ]
 
 { #category : #range }

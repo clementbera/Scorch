@@ -10,7 +10,7 @@ Class {
 	#name : #SoAbsSunkObjectState,
 	#superclass : #SoAbsNode,
 	#instVars : [
-		'uses',
+		'node',
 		'deoptNode',
 		'theClass',
 		'marker'
@@ -18,40 +18,23 @@ Class {
 	#category : #'Scorching-Nodes-Deopt'
 }
 
-{ #category : #graphEdition }
-SoAbsSunkObjectState >> addUse: use [
-	uses add: use
-]
-
 { #category : #conversion }
 SoAbsSunkObjectState >> asDeopt [
 	^ deoptNode ifNil: [ deoptNode := self convertToDeoptNode ]
 ]
 
-{ #category : #conversion }
-SoAbsSunkObjectState >> asDeoptFor: node [
-	^ self convertToDeoptNodeFor: node
-]
-
 { #category : #accessing }
-SoAbsSunkObjectState >> basicBlocks [
-	^ (self uses collect: [ :use | use instruction basicBlock ]) asSet asArray
+SoAbsSunkObjectState >> basicBlock [
+	^ node basicBlock
 ]
 
 { #category : #accessing }
 SoAbsSunkObjectState >> codeNode [
-	^ self basicBlocks 
-		ifNotEmpty: [ self basicBlocks anyOne codeNode ]
-		ifEmpty: [ "debugging only" SoMethod new ]
+	^ self basicBlock codeNode
 ]
 
 { #category : #conversion }
 SoAbsSunkObjectState >> convertToDeoptNode [
-	self subclassResponsibility 
-]
-
-{ #category : #conversion }
-SoAbsSunkObjectState >> convertToDeoptNodeFor: node [
 	self subclassResponsibility 
 ]
 
@@ -67,23 +50,8 @@ SoAbsSunkObjectState >> deoptNode: aValue [
 	deoptNode := aValue
 ]
 
-{ #category : #testing }
-SoAbsSunkObjectState >> inBasicBlock: bb1 or: bb2 [
-	^ self basicBlocks allSatisfy: [ :basicBlock |
-		basicBlock = bb1 or: [ basicBlock = bb2 ] ]
-]
-
-{ #category : #initialization }
-SoAbsSunkObjectState >> initialize [
-
-	super initialize.
-
-	uses := OrderedCollection new.
-]
-
 { #category : #dominator }
 SoAbsSunkObjectState >> isDominatedByBasicBlock: bb [
-	1halt.
 	^ bb dominatesInstr: node
 ]
 
@@ -104,17 +72,16 @@ SoAbsSunkObjectState >> marker: aValue [
 	marker := aValue
 ]
 
-{ #category : #graphEdition }
-SoAbsSunkObjectState >> postCopy [
-	super postCopy.
-	uses := OrderedCollection new
+{ #category : #accessing }
+SoAbsSunkObjectState >> node [
+	<generated>
+	^ node
 ]
 
-{ #category : #graphEdition }
-SoAbsSunkObjectState >> removeUse: use [
-	uses remove: use.
-	uses ifEmpty: [ self subNodesRemoveUses ].
-	"If uses drop to 0 then back to 1, program need to manually reAdd uses..."
+{ #category : #accessing }
+SoAbsSunkObjectState >> node: aValue [
+	<generated>
+	node := aValue
 ]
 
 { #category : #accessing }
@@ -127,16 +94,4 @@ SoAbsSunkObjectState >> theClass [
 SoAbsSunkObjectState >> theClass: aValue [
 	<generated>
 	theClass := aValue
-]
-
-{ #category : #accessing }
-SoAbsSunkObjectState >> uses [
-	<generated>
-	^ uses
-]
-
-{ #category : #accessing }
-SoAbsSunkObjectState >> uses: aValue [
-	<generated>
-	uses := aValue
 ]

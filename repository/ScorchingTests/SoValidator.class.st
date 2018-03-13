@@ -36,6 +36,9 @@ Class {
 		'ExPass',
 		'Timeout'
 	],
+	#pools : [
+		'SoOptimizationSettingConstants'
+	],
 	#category : #'ScorchingTests-Validation'
 }
 
@@ -96,15 +99,6 @@ SoValidator >> assert: val1 equals: val2 [
 		description: [ 'Got ' , val1 printString , ' instead of ' , val2 printString ]
 ]
 
-{ #category : #'graph sanity' }
-SoValidator >> basicValidateGraphSanity [
-	validationFailureClass := SoGraphInsane.
-	self assert: codeNode basicBlocks size equals: codeNode basicBlocks asSet size.
-	codeNode basicBlocks do: [ :basicBlock |
-		self validateInstructions: basicBlock.
-		self validateCFG: basicBlock ].
-]
-
 { #category : #private }
 SoValidator >> basicValidateMethod: method passes: o [
 	| optimizedCode |
@@ -112,22 +106,15 @@ SoValidator >> basicValidateMethod: method passes: o [
 	currentPass := SoMethodDecompiler.
 	codeNode := currentPass decompile: method.
 	self validateGraphSanity.
-	self doPasses: self defaultSuperBBState.
-	validationFailureClass := Error.
-	passSymbol do: [ :symbol |
-		self assert: (SoOptimizerDebugTest canUnderstand: symbol) description: 'incorrectPassSymbol'.
-		SoOptimizerDebugTest new 
-			codeNode: codeNode;
-			block: [ :optClass :superBlock |
-			currentPass := optClass.
-			superBlock value.
-			self validateGraphSanity ];
-			perform: symbol ].
-	(options includes: #earlyHalt) ifTrue: [ 1halt ].
-	(options includes: #finalGraphSanity) ifTrue: [ self basicValidateGraphSanity ].
-	self doPasses: self prepareCodePasses.
+	self defaultSuperBBState , (self class bindingOf: o) value , self prepareCodePasses do: [ :pass |
+		currentPass := pass.
+		"(pass = SoExpandAndReduce and: [ method selector = #exampleToDo3 ]) ifTrue: [ 1halt ]."
+		"pass = SoDeadFlowElimination ifTrue: [ 1halt ]."
+		pass new runOn: codeNode.
+		self validateGraphSanity ]. 
+	"FileStream stdout << codeNode printString."
 	optimizedCode := codeNode generateBytecodes. 
-	(options includes: #lateHalt) ifTrue: [ 1halt ].
+	(options includes: #halt) ifTrue: [ 1halt ].
 	self postGenerationValidation: method with: optimizedCode.
 	checks := checks + 1.
 ]
@@ -142,12 +129,10 @@ SoValidator >> bench: method against: optimizedMethod [
 
 { #category : #bench }
 SoValidator >> bench: method with: anotherMethod args: args [
-	| duration |
-	duration := 0.5 second.
 	benchReport add: {
 		method selector , ' ' , (passSymbol printStringLimitedTo: 20) .
-		[ self newGuineaPig withArgs: args executeMethod: method ] benchFor: duration.
-		[ self newGuineaPig withArgs: args executeMethod: anotherMethod ] benchFor: duration
+		[ self newGuineaPig withArgs: args executeMethod: method ] benchFor: 1 seconds .
+		[ self newGuineaPig withArgs: args executeMethod: anotherMethod ] benchFor: 1 seconds
 	}.
 ]
 
@@ -285,20 +270,12 @@ SoValidator >> deny: boolean [
 	self assert: boolean not
 ]
 
-{ #category : #private }
-SoValidator >> doPasses: passes [
-	passes do: [ :pass |
-		currentPass := pass.
-		pass new runOn: codeNode.
-		self validateGraphSanity ]
-]
-
 { #category : #'graph sanity' }
 SoValidator >> ensureDeoptInfo: instr [
 	instr isTrapIfNotInstanceOf ifTrue: [ self assert: instr hasDeoptInfo ].
-	instr isImmediateTrap ifTrue: [ self assert: instr hasDeoptInfo ].
+	instr class == SoImmediateTrap ifTrue: [ self assert: instr hasDeoptInfo ].
 	instr isSend ifTrue: [ self assert: instr hasDeoptInfo ].
-	instr class == SoSmalltalkBackjump ifTrue: [ self assert: instr hasDeoptInfo ].
+	instr isBackjump ifTrue: [ self assert: instr hasDeoptInfo ].
 ]
 
 { #category : #comparing }
@@ -338,21 +315,18 @@ SoValidator >> initialize [
 SoValidator >> isAlive: instr [
 	instr isImmediate ifTrue: [ ^ true ].
 	(self isInstructionAlive: instr) ifFalse: [ ^ false ].
-	^ instr isSunkObject
-		ifTrue: [ instr codeNode basicBlocks includesAll: instr basicBlocks ]
-		ifFalse: [ instr codeNode basicBlocks includes: instr basicBlock ]
+	^ instr codeNode basicBlocks includes: instr basicBlock
 ]
 
 { #category : #'graph sanity' }
 SoValidator >> isInstructionAlive: instr [
 	instr isPhiInput ifTrue: [ ^ self isInstructionAlive: instr phi ].
-	instr isSunkObject 
-		ifTrue: [ 
-			instr uses do: [ :deoptInfo |
-				self assert: (deoptInfo sunkObjects includes: instr).
-				deoptInfo instruction basicBlock instructionsDo: [ :i | i deoptInfo == deoptInfo ifTrue: [ ^ true ] ] ] ]
-		ifFalse: [ instr basicBlock instructionsDo: [ :i |
-					i == instr ifTrue: [ ^ true ] ] ].
+	instr basicBlock instructionsDo: [ :i |
+		i == instr ifTrue: [ ^ true ] ].
+	instr isSunkObject ifTrue: [ 
+		instr basicBlock instructionsDo: [ :i |
+			i hasDeoptInfo ifTrue: [ 
+				i deoptInfo sunkObjects detect: [ :s | s == instr ] ifFound: [ ^ true ] ] ] ].
 	^ false
 ]
 
@@ -408,16 +382,13 @@ SoValidator >> options: validationOptions [
 SoValidator >> possibleOptions [
 	^ #(
 		graphSanity "Ensure the graph is sane between each pass on the CFG"
-		finalGraphSanity "Ensure the graph is sane only twice, just before and just after the back-end."
 		comparison "Run the optimized code against the non-optimized and check the results are correct"
 		bench "Evaluate time spent in both optimized and regular code"
 		jitCode "Verify the optimized code can be compiled to machine code"
 		reportToTranscript "outputs result on Transcript"
 		debug "open inspectors on optimized and non optimized code"
 		jitComparison "Same as comparison but run enough time to be sure the machine code version are compared"
-		halt "Halt exception escapes"
-		lateHalt "halt after optimized code generation"
-		earlyHalt "halt just before optimized code generation"
+		halt "halt after optimized code generation"
 		longWarmUp "100 instead of 5 warm-up runs"
 		noWarmUp "0 instead of 5 warm-up runs"
 		)
@@ -427,7 +398,6 @@ SoValidator >> possibleOptions [
 SoValidator >> postGenerationValidation: method with: optimizedMethod [
 	self assert: optimizedMethod metadata class = SoDeoptMetadata.
 	SoOptCCodeValidator new validateCompiledCode: optimizedMethod.
-	(options includes: #finalGraphSanity) ifTrue: [ self basicValidateGraphSanity ].
 	(options includes: #comparison) ifTrue: [ self compare: method with: optimizedMethod ].
 	(options includes: #jitComparison) ifTrue: [ self jitCompare: method with: optimizedMethod ].
 	(options includes: #bench) ifTrue: [ self bench: method against: optimizedMethod ].
@@ -533,10 +503,7 @@ SoValidator >> runSafely: method on: guineaPig withArgs: args description: strin
 			on: Error 
 			do: [ :ex | 
 				ExPass ifTrue: [ ex pass ].
-				self 
-					errorFor: method 
-					messagePrefix: 'runtime error for ', string , ' (' , 
-									ex class name , ': ' ,ex messageText  ] ]  
+				self errorFor: method messagePrefix: 'runtime error for ', string ] ]  
 		valueWithin: 0.5 second 
 		onTimeout: [ self errorFor: method messagePrefix: 'method timed out for ', string ] 
 ]
@@ -562,7 +529,7 @@ SoValidator >> timeoutProtectValidateMethod: method passes: passes [
 SoValidator >> validateAnyInstruction: instr [
 	self assert: (self isInstructionAlive: instr).
 	self validateDeoptInfo: instr.
-	instr subNodesDo: [ :sub | 
+	instr subNodes do: [ :sub | 
 		sub isImmediate ifFalse: [ 
 			self assert: (self isAlive: sub).
 			instr isPhi
@@ -616,10 +583,8 @@ SoValidator >> validateCFGCanonicalization: bb [
 SoValidator >> validateDeoptInfo: instr [
 	self ensureDeoptInfo: instr.
 	instr hasDeoptInfo ifFalse: [ ^ self ].
-	self assert: instr deoptInfo instruction = instr.
 	instr deoptInfo sunkObjects do: [ :each |
-		"This is valuable but so slow... 4.5 to 6.5 seconds in one case...
-		self assert: each uses asSet asArray size = each uses size."
+		self assert: each node == instr.
 		each allFieldsDo: [ :f |
 			f isMarker 
 				ifTrue: [ self assert: ((instr deoptInfo sunkObjects anySatisfy: 
@@ -634,7 +599,11 @@ SoValidator >> validateDeoptInfo: instr [
 { #category : #'graph sanity' }
 SoValidator >> validateGraphSanity [
 	(options includes: #graphSanity) ifFalse: [ ^ self ].
-	self basicValidateGraphSanity
+	validationFailureClass := SoGraphInsane.
+	self assert: codeNode basicBlocks size equals: codeNode basicBlocks asSet size.
+	codeNode basicBlocks do: [ :basicBlock |
+		self validateInstructions: basicBlock.
+		self validateCFG: basicBlock ].
 ]
 
 { #category : #'graph sanity' }
@@ -652,7 +621,6 @@ SoValidator >> validateInstructions: basicBlock [
 		instr = basicBlock firstInstr ifFalse:
 			[self assert: instr prevInstr nextInstr == instr].
 		instr isSend ifTrue: [ self assert: instr sendData notNil ].
-		instr isPi ifTrue: [ self validatePi: instr ].
 		instr isPhi ifTrue: [ self validatePhi: instr predecessors: basicBlock predecessors ] ].
 	self validateLastInstruction: basicBlock lastInstr.
 ]
@@ -676,7 +644,7 @@ SoValidator >> validateMethod: method passes: passes [
 		on: Exception 
 		do: [ :ex | 
 			(ExPass and: [ ex class ~= SoContextAccessed ]) ifTrue: [ ex pass ].
-			((options includesAny: #(halt earlyHalt lateHalt)) and: [ ex class = Halt ]) ifTrue: [ ex pass ].
+			((options includes: #halt) and: [ ex class = Halt ]) ifTrue: [ ex pass ].
 			self 
 				reportValidationFailure: ((self castException: ex)
 					listOfPasses: passes printString;
@@ -693,13 +661,8 @@ SoValidator >> validateMethods: methods passes: passes [
 
 { #category : #public }
 SoValidator >> validateMethods: methods passes: passes options: opts [
-	| actualMethods |
-	actualMethods := methods collect: [ :m |
-		m isSymbol 
-			ifTrue: [ SoExamples >> m ]
-			ifFalse: [ m ] ].
 	self options: opts.
-	self validateMethods: actualMethods passes: passes.
+	self validateMethods: methods passes: passes.
 	^ self result
 ]
 
@@ -709,16 +672,6 @@ SoValidator >> validatePhi: phi predecessors: preds [
 	refs := phi basicBlockReferences.
 	self assert: refs size equals: preds size.
 	self assert: (refs asSet includesAll: preds)
-]
-
-{ #category : #'graph sanity' }
-SoValidator >> validatePi: pi [
-"	| instr |
-	instr := pi basicBlock firstInstr.
-	[ instr isPi ] whileTrue: [ 
-		instr = pi ifTrue: [ ^ self ].
-		instr := instr nextInstr ].
-	self assert: false description: 'pi in middle of bb'"
 ]
 
 { #category : #reporting }
@@ -738,6 +691,6 @@ SoValidator >> warmupRuns: method [
 	method methodClass = self class exampleClass ifFalse: [ ^ self "can't warm up" ].
 	gp := self newGuineaPig.
 	num := (options includes: #longWarmUp) ifTrue: [ 100 ] ifFalse: [ 
-		(options includes: #noWarmUp) ifTrue: [ 0 ] ifFalse: [ 7 ] ].
+		(options includes: #noWarmUp) ifTrue: [ 0 ] ifFalse: [ 5 ] ].
 	1 to: num do: [ :i | gp perform: method selector withArguments: (self exampleArgs: method) ]
 ]

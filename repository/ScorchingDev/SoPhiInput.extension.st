@@ -1,11 +1,6 @@
 Extension { #name : #SoPhiInput }
 
 { #category : #'*ScorchingDev' }
-SoPhiInput class >> nodesWithDef [
-	^#(input value)
-]
-
-{ #category : #'*ScorchingDev' }
 SoPhiInput >> printOn: stream [
 	input shortPrintOn: stream.
 	stream nextPut: $' .

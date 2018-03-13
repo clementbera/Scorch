@@ -58,8 +58,8 @@ SoTempIndexAllocator >> computeSets [
 { #category : #'graph coloring' }
 SoTempIndexAllocator >> graphColoring: codeNode [
 	| allNodes nodeMap numColors |
-	nodeMap := IdentityDictionary new. "Identity dict important for performance (no = on sets which are keys)"
-	allNodes := allSets values asIdentitySet collect: [ :set | nodeMap at: set put: (SoGraphNode id: set) ].
+	nodeMap := Dictionary new.
+	allNodes := allSets values collect: [ :set | nodeMap at: set put: (SoGraphNode id: set) ].
 	self addDependencies: allNodes nodeMap: nodeMap.
 	numColors := SoGraphColorer new 
 		color: allNodes asOrderedCollection 

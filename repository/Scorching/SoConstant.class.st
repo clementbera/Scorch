@@ -13,6 +13,9 @@ Class {
 	#instVars : [
 		'constant'
 	],
+	#pools : [
+		'SoPrimitiveConstants'
+	],
 	#category : #'Scorching-Nodes'
 }
 
@@ -39,11 +42,6 @@ SoConstant >> asDeopt [
 { #category : #types }
 SoConstant >> basicTypeInformation [
 	^ SoKnownType for: constant class
-]
-
-{ #category : #testing }
-SoConstant >> cannotBeForwarded [
-	^ true
 ]
 
 { #category : #accessing }
@@ -82,6 +80,12 @@ SoConstant >> hash [
 ]
 
 { #category : #testing }
+SoConstant >> is0Constant [
+	self isSmiConstant ifFalse: [ ^ false ].
+	^ constant = 0
+]
+
+{ #category : #testing }
 SoConstant >> isConstant [
 	^ true
 ]
@@ -107,6 +111,5 @@ SoConstant >> rangeInformation [
 
 { #category : #types }
 SoConstant >> sizeInformation [
-	"Size primitive"
-	^ constant tryPrimitive: 62 withArgs: #()
+	^ constant tryPrimitive: Size withArgs: #()
 ]

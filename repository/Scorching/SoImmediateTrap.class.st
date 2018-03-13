@@ -21,13 +21,8 @@ SoImmediateTrap >> deoptInfo [
 { #category : #accessing }
 SoImmediateTrap >> deoptInfo: aValue [
 	<generated>
-	aValue ifNotNil: [aValue instruction: self].
+	aValue ifNotNil: [aValue sunkObjects do: [ :sunkObj | sunkObj node: self ] ].
 	deoptInfo := aValue
-]
-
-{ #category : #testing }
-SoImmediateTrap >> isImmediateTrap [
-	^ true
 ]
 
 { #category : #traversing }

@@ -58,9 +58,10 @@ SoGraphNode >> id: anObject [
 
 { #category : #initialize }
 SoGraphNode >> initialize [
+
 	super initialize.
-	"Set scales a lot better with lots of nodes (many remove, includes)"
-	relations := Set new.
+
+	relations := OrderedCollection new.
 ]
 
 { #category : #printing }
@@ -98,7 +99,7 @@ SoGraphNode >> restoreRelations [
 
 { #category : #accessing }
 SoGraphNode >> saveRelations [
-	savedRelations := relations copy
+	savedRelations := relations copy.
 ]
 
 { #category : #accessing }

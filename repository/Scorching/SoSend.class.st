@@ -8,18 +8,17 @@ Instance Variables
 	sendData: <SendData> infos taken from the inline caches about the method and receiver types previously used. 
 	deoptInfo <Deoptimization> metadata kept for deoptimization
 	specializedSendData <SendData> version of sendData specialized with type inference. Used for inlining. May differ from sendData (typically more precise)
-	
-	nlrIssue <Boolean> used by the inlininer to avoid retrying nlr inlining too many times (expensive)
 "
 Class {
 	#name : #SoSend,
-	#superclass : #SoAbsCall,
+	#superclass : #SoAbsOp,
 	#instVars : [
 		'selector',
+		'loopDepth',
 		'methodClass',
 		'sendData',
-		'specializedSendData',
-		'nlrIssue'
+		'deoptInfo',
+		'specializedSendData'
 	],
 	#pools : [
 		'SoMemoryManagerConstants'
@@ -32,30 +31,9 @@ SoSend >> addDependency [
 	self codeNode addDependency: selector.
 ]
 
-{ #category : #inlining }
-SoSend >> basicInline [
-	| prim inlinerClass |
-	prim := self methodToInline primitive.
-	inlinerClass := ((prim = 0 or: [ self methodToInline isQuick ])
-		ifTrue: [ SoMethodInliner ]
-		ifFalse: [ 
-			prim = 207
-				ifTrue: [ SoBlockInliner ]
-				ifFalse: [ SoPrimitiveInliner ] ]).
-	^ inlinerClass new inline: self
-]
-
-{ #category : #testing }
-SoSend >> basicRespecializeSendDataWithTypeInference [
-	| inferredType |
-	"Sometimes other optimisations breaks the first type inference (incorrect guess).
-	 For cases like that we quickly re-inference types, but we don't pay the full inference cost"
-	receiver isPhi ifTrue: [ ^ self ]. "too expensive on phis - profiling"
-	inferredType := receiver basicTypeInformation.
-	inferredType hasOneType ifFalse: [ ^ self ]. 
-	"specialized data has a single data - always"
-	inferredType behaviors anyOne = specializedSendData behaviors anyOne ifTrue: [ ^self ].
-	specializedSendData := inferredType specializeSendData: self 
+{ #category : #conversion }
+SoSend >> asUnsafeOp: opClass [
+	^ opClass fromSend: self
 ]
 
 { #category : #testing }
@@ -64,11 +42,39 @@ SoSend >> canBeInlined [
 	^ specializedSendData ifNil: [ false ] ifNotNil: [ :it | it canBeInlined ]
 ]
 
+{ #category : #accessing }
+SoSend >> deoptInfo [
+	<generated>
+	^ deoptInfo
+]
+
+{ #category : #accessing }
+SoSend >> deoptInfo: aValue [
+	<generated>
+	aValue ifNotNil: [aValue sunkObjects do: [ :sunkObj | sunkObj node: self ] ].
+	deoptInfo := aValue
+]
+
+{ #category : #traps }
+SoSend >> forwarderTrap [
+	^ SoTrapIfNotInstanceOf new
+			behaviors: {Forwarder};
+			expression: receiver;
+			yourself
+]
+
 { #category : #testing }
 SoSend >> hasReliableInlinedRuntimeInformation [
 	"If this send is not used, then the method inlined has irrelevant sendAndBranchData"
 	sendData isAvailable ifFalse: [ ^ false ].
 	^ sendData behaviors includesAll: specializedSendData behaviors
+]
+
+{ #category : #testing }
+SoSend >> hasSizeInformation [
+	^ self canBeInlined 
+		and: [ self methodToInline primitive = 71
+		and: [ self firstArg isSmiConstant ] ]
 ]
 
 { #category : #testing }
@@ -94,34 +100,13 @@ SoSend >> inferredReceiverType [
 	^ inferredType hintTypeWith: sendData asType
 ]
 
-{ #category : #initialization }
-SoSend >> initialize [
-
-	super initialize.
-
-	nlrIssue := false.
-]
-
-{ #category : #inlining }
-SoSend >> inlineAccessWithNoRangeCheck [
-	^ SoPrimitiveInliner new inlineAccessWithNoRangeCheck: self
-]
-
 { #category : #traps }
 SoSend >> insertTrap [
-	"Added the guard for performance
-	 (deopt info def-use management can be expensive)
-	 Redondant with CSE"
-	| trap type  |
-	"guard"
-	type := receiver typeInformationAt: self.
-	type isKnownType ifTrue: 
-		[ (specializedSendData behaviors includesAll: type behaviors) ifTrue: [ ^ self ] ].
-	"actual trap"
-	self isSuperSend 
-		ifFalse: [ trap := (specializedSendData trapFor: receiver).
-				 trap deoptInfo: (deoptInfo convertToTrapWith: self) ]
-		ifTrue: [ trap := SoUnforward new expression: receiver; yourself ].
+	| trap |
+	trap := "self isSuperSend 
+		ifFalse: [ "(specializedSendData trapFor: receiver)"]
+		ifTrue: [ self forwarderTrap ]".
+	trap deoptInfo: (deoptInfo convertToTrapWith: self).
 	trap insertBefore: self.
 ]
 
@@ -139,6 +124,18 @@ SoSend >> isSuperSend [
 SoSend >> isTraversedBy: aTraverser [
 	<generated>
 	^ aTraverser traverseSend: self
+]
+
+{ #category : #accessing }
+SoSend >> loopDepth [
+	<generated>
+	^ loopDepth
+]
+
+{ #category : #accessing }
+SoSend >> loopDepth: aValue [
+	<generated>
+	loopDepth := aValue
 ]
 
 { #category : #testing }
@@ -161,18 +158,6 @@ SoSend >> methodClass: aValue [
 { #category : #accessing }
 SoSend >> methodToInline [
 	^ specializedSendData methodToInline
-]
-
-{ #category : #accessing }
-SoSend >> nlrIssue [
-	<generated>
-	^ nlrIssue
-]
-
-{ #category : #accessing }
-SoSend >> nlrIssue: aValue [
-	<generated>
-	nlrIssue := aValue
 ]
 
 { #category : #copying }
@@ -207,25 +192,28 @@ SoSend >> sendData: aValue [
 ]
 
 { #category : #testing }
+SoSend >> sizeInformation [
+	^ self firstArg constant
+]
+
+{ #category : #testing }
 SoSend >> specializeSendDataWithTypeInference [
 	| inferredType |
 	"If the analysis succeeds, no need to do it again"
-	specializedSendData ifNotNil: [ ^ self basicRespecializeSendDataWithTypeInference ].
+	specializedSendData ifNotNil: [ ^ self ].
 	inferredType := self inferredReceiverType.   
-	inferredType isKnownType ifFalse: [ ^ self ]. 
+	inferredType hasOneType ifFalse: [ ^ self ]. 
 	specializedSendData := inferredType specializeSendData: self 
 ]
 
 { #category : #accessing }
 SoSend >> specializedSendData [
-	<generated>
 	^ specializedSendData
 ]
 
 { #category : #accessing }
-SoSend >> specializedSendData: aValue [
-	<generated>
-	specializedSendData := aValue
+SoSend >> specializedSendData: anObject [
+	specializedSendData := anObject
 ]
 
 { #category : #accessing }

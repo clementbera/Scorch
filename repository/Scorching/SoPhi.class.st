@@ -9,7 +9,8 @@ Class {
 	#name : #SoPhi,
 	#superclass : #SoAbsBodyInstruction,
 	#instVars : [
-		'inputsMapping'
+		'inputsMapping',
+		'runningTypeAnalysis'
 	],
 	#category : #'Scorching-Nodes-Body Instructions'
 }
@@ -35,28 +36,18 @@ SoPhi >> basicBlocksForInput: input [
 
 { #category : #types }
 SoPhi >> basicTypeInformation [
-	| type inputs |
-	inputs := self mergeInputs.
-	type := inputs first typeInformationAt: self.
-	"profiling - inlined"
-	2 to: inputs size do: [ :i | type := type union: ((inputs at: i) typeInformationAt: self) ].
-	^ type
-]
-
-{ #category : #testing }
-SoPhi >> cannotBeForwarded [
 	^ self isLoopPhi 
-		ifTrue: [ self hasLoopPhiRangeInformation "if range, it's a smi, so no fwder" ]
-		ifFalse: [ self inputs allSatisfy: [ :in | in cannotBeForwarded ] ]
+		ifTrue: [ self loopBasicTypeInformation ]
+		ifFalse: [ self mergeBasicTypeInformation ]
 ]
 
 { #category : #testing }
 SoPhi >> hasLoopPhiRangeInformation [
 	| in |
-	self loopPhiForwardInput hasRangeInformation ifFalse: [ ^ false ].
+	self loopPhiForwardInput isSmiConstant ifFalse: [ ^ false ].
 	in := self loopPhiBackInput.
-	[ in isIteratorMutator: self ] whileTrue: 
-		[ in := in nextIterator: self.
+	[ in isIteratorMutator ] whileTrue: 
+		[ in := in nextIterator.
 		  in == self ifTrue: [ ^ true ] ].
 	^ false
 ]
@@ -73,7 +64,8 @@ SoPhi >> initialize [
 
 	super initialize.
 
-	inputsMapping := OrderedCollection new
+	inputsMapping := OrderedCollection new.
+	runningTypeAnalysis := false
 ]
 
 { #category : #inputs }
@@ -116,6 +108,17 @@ SoPhi >> isTraversedBy: aTraverser [
 	^ aTraverser traversePhi: self
 ]
 
+{ #category : #types }
+SoPhi >> loopBasicTypeInformation [
+	| type |
+	"In the case of a loop, we need to ensure that we don't end up with an infinite recursion."
+	runningTypeAnalysis ifTrue: [ ^ SoUnknownType default ].
+	runningTypeAnalysis := true.
+	type := self mergeBasicTypeInformation.
+	runningTypeAnalysis := false.
+	^ type
+]
+
 { #category : #loopPhi }
 SoPhi >> loopPhiBackInput [
 	self inputsAndBasicBlocksDo: [ :in :bb |
@@ -137,49 +140,35 @@ SoPhi >> loopPhiForwardPredecessor [
 { #category : #types }
 SoPhi >> loopRangeInformation [
 	"Hard wired range computation to avoid infinite loop."
-	| in shift initialRange |
+	| in shift start |
 	shift := 0.
 	in := self loopPhiBackInput.
-	initialRange := self loopPhiForwardInput rangeInformation.
-	[ in isIteratorMutator: self ] whileTrue: 
-		[ shift := shift + (in iteratorMutatorValue: self).
-		  in := in nextIterator: self].
+	start := self loopPhiForwardInput.
+	[ in isIteratorMutator ] whileTrue: 
+		[ in isSmiAddOp ifTrue: [shift := shift + in firstArg constant].
+		  in := in nextIterator].
 	shift = 0 ifTrue: [ ^SoRange new 
-			minConstant: initialRange actualMinVal;
-			maxConstant: initialRange actualMaxVal;
+			minConstant: start constant;
+			maxConstant: start constant;
 			yourself].
 	shift > 0 ifTrue: [ ^SoRange new 
-			minConstant: initialRange actualMinVal;
+			minConstant: start constant;
 			maxConstant: SmallInteger maxVal;
 			yourself].
 	^SoRange new 
 			minConstant: SmallInteger minVal;
-			maxConstant: initialRange actualMaxVal;
+			maxConstant: start constant;
 			yourself
 	
 ]
 
 { #category : #types }
-SoPhi >> mergeInputs [
-	| stream phisDealtWith |
-	phisDealtWith := Set with: self.
-	stream := (Array new: 12) writeStream.
-	self mergeInputsInto: stream excluding: phisDealtWith.
-	^ stream contents asSet asArray
-]
-
-{ #category : #types }
-SoPhi >> mergeInputsInto: stream excluding: phisDealtWith [
-	"Profiler"
-	1 to: inputsMapping size do: [:i | | in |
-		in := (inputsMapping at: i) input.
-		in isPhi
-			ifTrue: [  
-				(phisDealtWith includes: in) 
-					ifFalse: [ 
-						phisDealtWith add: in.
-						in mergeInputsInto: stream excluding: phisDealtWith ] ]
-			ifFalse: [ stream nextPut: in ] ]
+SoPhi >> mergeBasicTypeInformation [
+	| type inputs |
+	inputs := self inputs.
+	type := inputs first basicTypeInformation.
+	inputs allButFirstDo: [ :in | type := type union: in basicTypeInformation ].
+	^ type
 ]
 
 { #category : #types }
@@ -227,6 +216,12 @@ SoPhi >> removeInputForBasicBlock: bb [
 	thePhiInput input removeUse: thePhiInput
 ]
 
+{ #category : #removing }
+SoPhi >> removeInstr [
+	super removeInstr.
+	backend := thisContext stackOfSize: 10. 
+]
+
 { #category : #inputs }
 SoPhi >> replaceBasicBlock: inputBasicBlock with: anotherBasicBlock [
 	inputsMapping 
@@ -245,21 +240,11 @@ SoPhi >> replaceSubNode: node by: anotherNode [
 
 { #category : #'graph edition' }
 SoPhi >> subNodes [
-	"keep duplicate here."
+	" I think we need to keep duplicate here."
 	^ inputsMapping collect: [ :phiInput | phiInput input ]
-]
-
-{ #category : #'graph edition' }
-SoPhi >> subNodesDo: aBlock [
-	inputsMapping do: [ :phiInput | aBlock value: phiInput input ]
 ]
 
 { #category : #'graph edition' }
 SoPhi >> subNodesRemoveUses [
 	inputsMapping do: [ :phiInput | phiInput input removeUse: phiInput ]
-]
-
-{ #category : #'graph edition' }
-SoPhi >> subNodesSize [
-	^ inputsMapping size
 ]

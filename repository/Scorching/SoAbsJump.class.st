@@ -28,8 +28,3 @@ SoAbsJump >> backEndJumpSize: aValue [
 SoAbsJump >> isJump [
 	^ true
 ]
-
-{ #category : #accessing }
-SoAbsJump >> popSize [
-	^ 0
-]

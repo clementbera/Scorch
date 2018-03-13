@@ -2,7 +2,7 @@ Extension { #name : #SoAbsSunkObjectState }
 
 { #category : #'*ScorchingDev' }
 SoAbsSunkObjectState >> debugUses [
-	^ #()
+	^ {node}
 ]
 
 { #category : #'*ScorchingDev' }

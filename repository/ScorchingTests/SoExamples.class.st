@@ -346,18 +346,6 @@ SoExamples >> exampleArrayAsArg [
 ]
 
 { #category : #examples }
-SoExamples >> exampleArrayCopy [
-	 
-	#(1 2 3 4 5) copy replaceFrom: 2 to: 4 with: #(22 33 44) startingAt: 1
-]
-
-{ #category : #examples }
-SoExamples >> exampleArrayCopy2 [
-	 
-	^ #(1 2 3 4 5) copy replaceFrom: 2 to: 4 with: #(22 33 44) startingAt: 1
-]
-
-{ #category : #examples }
 SoExamples >> exampleArrayDo [
 	 Smalltalk specialSelectors  do: [ :i | self kick: i ]
 ]
@@ -390,51 +378,6 @@ SoExamples >> exampleAssignment [
 	| temp1 |
 	temp1 := #value.
 	^ temp1
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleAtAllPut [
-	^ (ByteArray new: 100)
-		atAllPut: 55;
-		yourself
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleAtAllPut2 [
-	| b |
-	b := ByteArray new: 100.
-	1 to: b size do: [ :i |
-		b at: i put: 42 ].
-	^ b
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleAtAllPut3 [
-	| b |
-	b := ByteArray new: 100.
-	self printString.
-	1 to: b size do: [ :i |
-		b at: i put: 42 ].
-	^ b
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleAtAllPut4 [
-	| b o |
-	o := Object new.
-	b := Array new: 88.
-	1 to: b size do: [ :i |
-		b at: i put: o ].
-	^ b
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleAtAllPut5 [
-	| b o |
-	o := Object new.
-	b := Array new: #(88 88) atRandom. "emulates unknown size"
-	b atAllPut: o.
-	^ b 
 ]
 
 { #category : #examples }
@@ -631,7 +574,7 @@ SoExamples >> exampleBlockDoubleNestedBackJump [
 { #category : #'examples - blocks' }
 SoExamples >> exampleBlockEvalMulti [
 	[ 1 + 2 ] value.
-	self evalMulti: [ self foo ].
+	self evalMulti: [ 3 + 5. self printString ].
 ]
 
 { #category : #'examples - blocks' }
@@ -934,24 +877,6 @@ SoExamples >> exampleCopyingBlockArg: arg [
 	^ [ temp + arg ] value
 ]
 
-{ #category : #'example - loop opt' }
-SoExamples >> exampleDetect [
-	| cp |
-	cp := #(1 2 3 4 5 6 7 8 9 10) shallowCopy.
-	cp detect: [ :each | each = 7 ] ifFound: [ :elem | ^ elem ] ifNone: [ ^ 0 ].
-	
-	
-]
-
-{ #category : #'examples - ranges' }
-SoExamples >> exampleDoubleWhile [
-	| seconds nanos |
-	seconds := #(1 1) atRandom.
-	nanos := #(2 2) atRandom.
-	[ nanos < 0 ] whileTrue: [ nanos := nanos + 50 ].
-	[ seconds < 0 ] whileTrue: [ seconds := seconds + 1. ]
-]
-
 { #category : #examples }
 SoExamples >> exampleEmptyTemp [
 	
@@ -1217,7 +1142,7 @@ SoExamples >> exampleInstVarX [
 
 { #category : #examples }
 SoExamples >> exampleIsSomething [
-	^ #( 1 . 2 ) atRandom isInteger ifTrue: [ 1 ] ifFalse: [ 0 ]
+	^ #( 1 . #foo ) atRandom isInteger ifTrue: [ 1 ] ifFalse: [ 0 ]
 ]
 
 { #category : #examples }
@@ -1295,7 +1220,7 @@ SoExamples >> exampleLoopManyExits [
 { #category : #'examples - jumps' }
 SoExamples >> exampleLoopManyPhis [
 	| tmp1 tmp2 tmp3 |
-	1 to: 17 do: [ :i | 
+	1 to: 25 do: [ :i | 
 		tmp1 := SoExamplesDispatch new.
 		tmp2 := SoExamplesDispatch new.
 		tmp3 := SoExamplesDispatch new.
@@ -1343,7 +1268,6 @@ SoExamples >> exampleMultipleIfTrue [
 { #category : #'examples - jumps' }
 SoExamples >> exampleMultipleJumpNoFallThrough [
 	| iterator |
-	iv2 := 7.
 	(self bool: $s) ifTrue: 
 		[ iterator := 1.
 		  [ iterator < 5 ] whileTrue: 
@@ -1484,7 +1408,7 @@ SoExamples >> exampleOptimizedBlockInOptimizedBlock [
 { #category : #'example - loop opt' }
 SoExamples >> examplePeelUsedAfter [
 	| array comp val iterator |
-	array := #(1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5 1 2 3 4 5) .
+	array := { 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 . 1 . 2 . 3 . 4 . 5 } .
 	val := 5.
 	iterator := 1.
 	[ comp := (iterator <= 5) ] whileTrue: [ 
@@ -1496,11 +1420,6 @@ SoExamples >> examplePeelUsedAfter [
 { #category : #examples }
 SoExamples >> examplePerform [
 	Object new perform: #bindingOf: with: nil
-]
-
-{ #category : #examples }
-SoExamples >> examplePerformLoop [
-	^ (1 to: 10) asArray collect: #asFloat
 ]
 
 { #category : #examples }
@@ -1660,31 +1579,11 @@ SoExamples >> exampleRangeFolding [
 ]
 
 { #category : #'examples - ranges' }
-SoExamples >> exampleRangeMinMax [
-	| t1 t2 i1 i2|
-	i1 := #(1 1) atRandom.
-	i2 := #(2 2) atRandom.
-	t1 := i1 max: i2.
-	t2 := i2 min: i1.
-	^ t1 <= t2	
-]
-
-{ #category : #'examples - ranges' }
 SoExamples >> exampleRealRange1 [
 	iv1 := #(1 2 3 4).
 	iv1 do: [ :elem | self nonInlinedEval: elem ].
 	iv1 := #(a b c d e).
 	iv1 do: #species.
-]
-
-{ #category : #'examples - ranges' }
-SoExamples >> exampleRealRange2 [
-	^ #(1 2 3 4 5) asSet asArray
-]
-
-{ #category : #'examples - ranges' }
-SoExamples >> exampleRealRange3 [
-	^ #(1 2 3 4 5) asOrderedCollection asArray
 ]
 
 { #category : #'examples - remote' }
@@ -1757,12 +1656,6 @@ SoExamples >> exampleRepeatBranch [
 	self foo: 1 bar: 2.
 ]
 
-{ #category : #'examples - primitive' }
-SoExamples >> exampleReplace [
-	iv1 := #[1 2 3 4 5] shallowCopy replaceFrom: 2 to: 4 with: #[10 11 12] startingAt: 1.
-	^ #(a b c d e) shallowCopy replaceFrom: 2 to: 4 with: #(10 11 12) startingAt: 1
-]
-
 { #category : #'examples - jumps' }
 SoExamples >> exampleReturnJump [
 	| bool |
@@ -1801,58 +1694,6 @@ SoExamples >> exampleSmallLoop [
 	"May get unrolled or peeled"
 	^ { 1 . 2 . 3 . 4 . 5. 6. 7. 8. 9. 10 } includes: 7
 	
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleSmiBitPrim [
-	| int |
-	"Can't optimise random, but get ranges afterwards. 
-	 Tries to use different int to debug easy"
-	int := #(2 2) atRandom.
-	int > 10 ifTrue: [ ^ self ].
-	int < -11 ifTrue: [ ^ self ].
-	iv1 := int bitAnd: 5.
-	iv2 := int bitOr: 3.
-	^ { int bitXor: 7. int bitShift: 1. int bitShift: -1 }
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleSmiBitPrimIdentity [
-	| int |
-	"Can't optimise random, but get ranges afterwards. 
-	 Tries to use different int to debug easy"
-	int := #(2 2) atRandom.
-	int > 10 ifTrue: [ ^ self ].
-	int < -11 ifTrue: [ ^ self ].
-	iv1 := { int bitAnd: -1 . -1 bitAnd: int . int bitAnd: 0 . 0 bitAnd: int }.
-	iv2 := { int bitOr: -1 . -1 bitOr: int . int bitOr: 0 . 0 bitOr: int }.
-	^ { int bitXor: 0. 0 bitXor: int . int bitShift: 0. 0 bitShift: int }
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleSmiPrim [
-	| int |
-	"Can't optimise random, but get ranges afterwards. 
-	 Tries to use different int to debug easy"
-	int := #(2 2) atRandom.
-	int > 10 ifTrue: [ ^ self ].
-	int < -11 ifTrue: [ ^ self ].
-	iv1 := int + 5.
-	iv2 := int - 4.
-	^ { int < 1 . int > 2 . int <= 3 . int >= 0 . int = -1 . int ~= -1 }
-]
-
-{ #category : #'examples - primitive' }
-SoExamples >> exampleSmiPrimIdentityAbsorbing [
-	| int |
-	"Can't optimise random, but get ranges afterwards. 
-	 Tries to use different int to debug easy"
-	int := #(2 2) atRandom.
-	int > 10 ifTrue: [ ^ self ].
-	int < 1 ifTrue: [ ^ self ].
-	iv1 := { int + 0 . 0 + int . }.
-	iv2 := { int - 0 . int * 0 . 0 * int . int * 1 . 1 * int }.
-	^ {  int // 1 . 0 // int . 0 \\ int . int quo: 1 . 0 quo: int }
 ]
 
 { #category : #'examples - jumps' }
@@ -2100,7 +1941,6 @@ SoExamples >> exampleUnrollUsedAfter [
 	iterator := 1.
 	[ comp := (iterator <= 5) ] whileTrue: [ 
 		val := val + (array at: iterator).
-		iv1 := comp.
 		iterator := iterator + 1 ].
 	^ { val . iterator . comp }
 ]

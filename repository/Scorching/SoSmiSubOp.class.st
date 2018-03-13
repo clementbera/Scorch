@@ -1,6 +1,7 @@
 "
 Smi substraction with no overflow check.
 
+For canonicalization purpose, if it's variable - cst, it should be canonicalized to SmiAddOp.
 "
 Class {
 	#name : #SoSmiSubOp,
@@ -8,10 +9,20 @@ Class {
 	#category : #'Scorching-Nodes-SmiOp'
 }
 
+{ #category : #'instance creation' }
+SoSmiSubOp class >> fromSend: send [
+	"Canonicalization"
+	send firstArg isConstant ifTrue: 
+		[ ^ SoSmiAddOp 	
+				withReceiver: send receiver
+				arguments: { SoConstant constant: (send firstArg constant negated) } ].
+	^ super fromSend: send
+]
+
 { #category : #testing }
 SoSmiSubOp >> hasRangeInformation [
-	"Can be true when unchecking but not now without E-SSA"
-	^ receiver hasRangeInformation and: [ self firstArg hasRangeInformation ]
+	"This is the most useful case right now"
+	^ true
 ]
 
 { #category : #traversing }
@@ -22,7 +33,8 @@ SoSmiSubOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiSubOp >> primitiveNumber [
-	^ 2001
+	<script>
+	^ USmiSub
 ]
 
 { #category : #types }
@@ -36,5 +48,6 @@ SoSmiSubOp >> rangeInformation [
 
 { #category : #primitive }
 SoSmiSubOp >> safePrimitiveNumber [
-	^ 2
+	<script>
+	^ Sub
 ]

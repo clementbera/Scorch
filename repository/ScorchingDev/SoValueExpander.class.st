@@ -25,23 +25,6 @@ SoValueExpander >> expandSubNodes: instVarName on: stream [
 ]
 
 { #category : #'macro-expansions' }
-SoValueExpander >> expandSubNodesAnySatisfy: instVarName last: isLast on: stream [
-	isLast ifTrue: [ 
-		^ stream << '^aBlock value: ' << instVarName ].
-	stream << '(aBlock value: ' << instVarName << ') ifTrue: [^true]'.
-]
-
-{ #category : #'macro-expansions' }
-SoValueExpander >> expandSubNodesDo: instVarName on: stream [
-	stream << 'aBlock value: ' << instVarName
-]
-
-{ #category : #'macro-expansions' }
-SoValueExpander >> expandSubNodesSize: instVarName on: stream [
-	stream << '1'
-]
-
-{ #category : #'macro-expansions' }
 SoValueExpander >> generateDefUseSetter: varName class: aClass [
 	| s |
 	s := '' writeStream.

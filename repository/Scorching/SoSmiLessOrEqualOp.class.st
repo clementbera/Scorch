@@ -17,10 +17,12 @@ SoSmiLessOrEqualOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiLessOrEqualOp >> primitiveNumber [
-	^ 2035
+	<script>
+	^ USmiLessOrEqual
 ]
 
 { #category : #primitive }
 SoSmiLessOrEqualOp >> safePrimitiveNumber [
-	^ 5
+	<script>
+	^ LessOrEqual
 ]

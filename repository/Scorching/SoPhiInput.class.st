@@ -49,11 +49,6 @@ SoPhiInput >> codeNode [
 	^ phi codeNode
 ]
 
-{ #category : #testing }
-SoPhiInput >> inBasicBlock: bb1 or: bb2 [
-	^ basicBlock = bb1 or: [ basicBlock = bb2 ]
-]
-
 { #category : #accessing }
 SoPhiInput >> input [
 	<generated>
@@ -92,32 +87,11 @@ SoPhiInput >> phi: aValue [
 { #category : #copying }
 SoPhiInput >> postCopy [
 	super postCopy.
-	self subNodesDo: [ :each | each addUse: self ].
+	self subNodes do: [ :each | each addUse: self ].
 ]
 
 { #category : #'graph edition' }
 SoPhiInput >> subNodes [
 	<generated>
 	^ {input}
-]
-
-{ #category : #'graph edition' }
-SoPhiInput >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	^aBlock value: input.
-	
-]
-
-{ #category : #'graph edition' }
-SoPhiInput >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: input
-]
-
-{ #category : #'graph edition' }
-SoPhiInput >> subNodesSize [
-	<generated>
-	^ 1
 ]

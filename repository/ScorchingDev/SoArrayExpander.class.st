@@ -9,7 +9,7 @@ SoArrayExpander >> expandReplaceSubNode: instVarName last: isLast on: stream [
 	self assert: isLast.
 	stream 
 		<< instVarName << ' at: (' << instVarName 
-		<< ' indexOf: node) put: anotherNode.'.
+		<< ' identityIndexOf: node) put: anotherNode.'.
 	stream cr;tab.
 	stream << 'anotherNode addUse: self.'.
 ]
@@ -17,22 +17,6 @@ SoArrayExpander >> expandReplaceSubNode: instVarName last: isLast on: stream [
 { #category : #'macro-expansions' }
 SoArrayExpander >> expandSubNodes: instVarName on: stream [
 	stream << instVarName
-]
-
-{ #category : #'macro-expansions' }
-SoArrayExpander >> expandSubNodesAnySatisfy: instVarName last: isLast on: stream [
-	self assert: isLast.
-	stream << '^' << instVarName << ' anySatisfy: aBlock'.
-]
-
-{ #category : #'macro-expansions' }
-SoArrayExpander >> expandSubNodesDo: instVarName on: stream [
-	stream << instVarName << ' do: aBlock'.
-]
-
-{ #category : #'macro-expansions' }
-SoArrayExpander >> expandSubNodesSize: instVarName on: stream [
-	stream << instVarName << ' size'
 ]
 
 { #category : #'macro-expansions' }

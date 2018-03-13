@@ -27,7 +27,8 @@ SoCreateFullBlock >> asSunkClosure [
 				SoConstant constant: compiledCode .
 				SoConstant constant: self numArgs .
 				receiver };
-			variableFields: values copy;
+			variableFields: values;
+			subNodesRemoveUses; "Only copies are actually used"
 			yourself 
 ]
 
@@ -37,18 +38,13 @@ SoCreateFullBlock >> basicReplaceSubNode: node by: anotherNode [
 	receiver == node ifTrue: [ 
 		receiver := anotherNode.
 		^ anotherNode addUse: self ].
-	values at: (values indexOf: node) put: anotherNode.
+	values at: (values identityIndexOf: node) put: anotherNode.
 	anotherNode addUse: self.
 ]
 
 { #category : #type }
 SoCreateFullBlock >> basicTypeInformation [
 	^ SoKnownType for: (Smalltalk at: #FullBlockClosure)
-]
-
-{ #category : #testing }
-SoCreateFullBlock >> cannotBeForwarded [
-	^ true
 ]
 
 { #category : #accessing }
@@ -61,11 +57,6 @@ SoCreateFullBlock >> compiledCode [
 SoCreateFullBlock >> compiledCode: aValue [
 	<generated>
 	compiledCode := aValue
-]
-
-{ #category : #testing }
-SoCreateFullBlock >> hasEffect [
-	^ false
 ]
 
 { #category : #testing }
@@ -123,29 +114,6 @@ SoCreateFullBlock >> receiver: aValue [
 SoCreateFullBlock >> subNodes [
 	<generated>
 	^ {receiver} , values
-]
-
-{ #category : #'graph edition' }
-SoCreateFullBlock >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	(aBlock value: receiver) ifTrue: [^true].
-	^values anySatisfy: aBlock.
-	
-]
-
-{ #category : #'graph edition' }
-SoCreateFullBlock >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: receiver.
-	values do: aBlock
-]
-
-{ #category : #'graph edition' }
-SoCreateFullBlock >> subNodesSize [
-	<generated>
-	^ 1 + values size
 ]
 
 { #category : #accessing }

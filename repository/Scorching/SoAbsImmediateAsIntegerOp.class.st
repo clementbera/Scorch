@@ -14,5 +14,5 @@ SoAbsImmediateAsIntegerOp >> basicTypeInformation [
 
 { #category : #primitive }
 SoAbsImmediateAsIntegerOp >> safePrimitiveNumber [
-	^ 171
+	^ ImmediateAsInteger
 ]

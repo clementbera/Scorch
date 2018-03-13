@@ -24,6 +24,45 @@ SoTemp >> addInterferenceWith: instr [
 ]
 
 { #category : #'bytecode generation' }
+SoTemp >> genClassOp: node with: builder [
+	<script>
+	builder genClassOp: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genClassOpReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genContextInstVarRead: node with: builder [
+	<script>
+	builder genPushContextInstVar: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genContextInstVarReadReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genCreateArray: node with: builder [
+	<script>
+	builder genCreateArray: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genCreateArrayReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
 SoTemp >> genCreateContextFullBlock: node with: builder [
 	<script>
 	builder genCreateContextFullBlock: node.
@@ -50,13 +89,41 @@ SoTemp >> genCreateFullBlockReference: node with: builder [
 ]
 
 { #category : #'bytecode generation' }
-SoTemp >> genInstantiation: op with: builder [
-	builder genInstantiation: op.
+SoTemp >> genCreateTempVect: node with: builder [
+	<script>
+	builder genCreateTempVect: node.
 	builder genPopIntoTemp: tempIndex
 ]
 
 { #category : #'bytecode generation' }
-SoTemp >> genInstantiationReference: node with: builder [
+SoTemp >> genCreateTempVectReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genGlobalRead: node with: builder [
+	<script>
+	builder genPushGlobal: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genGlobalReadReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genInstVarRead: node with: builder [
+	<script>
+	builder genPushInstVar: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genInstVarReadReference: node with: builder [
+	<script>
 	builder genPushTemp: tempIndex
 ]
 
@@ -94,6 +161,32 @@ SoTemp >> genPhi: phi tempInput: input with: builder [
 
 { #category : #'bytecode generation' }
 SoTemp >> genPhiReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genPointerEqualsOp: node with: builder [
+	<script>
+	builder genPointerEqualsOp: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genPointerEqualsOpReference: node with: builder [
+	<script>
+	builder genPushTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genRemoteTempRead: node with: builder [
+	<script>
+	builder genPushRemoteTemp: node.
+	builder genPopIntoTemp: tempIndex
+]
+
+{ #category : #'bytecode generation' }
+SoTemp >> genRemoteTempReadReference: node with: builder [
 	<script>
 	builder genPushTemp: tempIndex
 ]

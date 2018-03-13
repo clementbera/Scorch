@@ -15,8 +15,7 @@ Class {
 
 { #category : #testing }
 SoAbsSmiBitShiftOp >> hasRangeInformation [
-	"Can be true when unchecking but not now without E-SSA"
-	^ receiver hasRangeInformation and: [ self firstArg hasRangeInformation ]
+	^ true
 ]
 
 { #category : #traversing }
@@ -27,5 +26,6 @@ SoAbsSmiBitShiftOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoAbsSmiBitShiftOp >> safePrimitiveNumber [
-	^ 17
+	<script>
+	^ BitShift
 ]

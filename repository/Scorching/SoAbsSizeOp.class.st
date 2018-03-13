@@ -37,8 +37,3 @@ SoAbsSizeOp >> rangeInformation [
 		maxArraySize: self;
 		yourself
 ]
-
-{ #category : #primitive }
-SoAbsSizeOp >> safePrimitiveNumber [
-	^ 62
-]

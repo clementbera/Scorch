@@ -13,17 +13,7 @@ SoAbsNode >> basicReplaceSubNode: one by: other [
 ]
 
 { #category : #testing }
-SoAbsNode >> canBeCSE [
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> canLocallySpecifyType [
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> cannotBeForwarded [
 	^ false
 ]
 
@@ -33,18 +23,8 @@ SoAbsNode >> deoptInfo [
 ]
 
 { #category : #testing }
-SoAbsNode >> hasBreakingDeoptPoint [
-	^ self hasDeoptInfo
-]
-
-{ #category : #testing }
 SoAbsNode >> hasDeoptInfo [
 	^ self deoptInfo notNil
-]
-
-{ #category : #testing }
-SoAbsNode >> hasEffect [
-	^ true
 ]
 
 { #category : #testing }
@@ -117,12 +97,6 @@ SoAbsNode >> isBranchIfNotInstanceOf [
 ]
 
 { #category : #testing }
-SoAbsNode >> isByteNewColon [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> isCFGInstr [
 	<generated>
 	^ false
@@ -130,12 +104,6 @@ SoAbsNode >> isCFGInstr [
 
 { #category : #testing }
 SoAbsNode >> isCFGInstruction [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isCall [
 	<generated>
 	^ false
 ]
@@ -153,13 +121,7 @@ SoAbsNode >> isCreateArray [
 ]
 
 { #category : #testing }
-SoAbsNode >> isEnsureEnoughSlots [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isEscapeFor: node [
+SoAbsNode >> isEnsureEnoughSpace [
 	^ false
 ]
 
@@ -175,24 +137,13 @@ SoAbsNode >> isImmediate [
 ]
 
 { #category : #testing }
-SoAbsNode >> isImmediateTrap [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> isInstVar [
 	^ false
 		
 ]
 
 { #category : #testing }
-SoAbsNode >> isInstanceOfBranch [
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isIteratorMutator: phi [
+SoAbsNode >> isIteratorMutator [
 	<generated>
 	^ false
 ]
@@ -210,17 +161,6 @@ SoAbsNode >> isJumpAhead [
 ]
 
 { #category : #testing }
-SoAbsNode >> isLoopHead [
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isMapped [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> isMarker [
 	<generated>
 	^ false
@@ -228,12 +168,6 @@ SoAbsNode >> isMarker [
 
 { #category : #testing }
 SoAbsNode >> isNew [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isObjectAccess [
 	<generated>
 	^ false
 ]
@@ -257,42 +191,7 @@ SoAbsNode >> isPi [
 ]
 
 { #category : #testing }
-SoAbsNode >> isPipelinedBooleanBranch [
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isPointerEquals [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isPointerNew [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isPointerNewColon [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isPossibleRoot [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> isRead [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isReadOnlyBranch [
 	<generated>
 	^ false
 ]
@@ -370,19 +269,7 @@ SoAbsNode >> isTempVector [
 ]
 
 { #category : #testing }
-SoAbsNode >> isTrapIf [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> isTrapIfNotInstanceOf [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> isTrapIfReadOnly [
 	<generated>
 	^ false
 ]
@@ -406,18 +293,7 @@ SoAbsNode >> isWrite [
 ]
 
 { #category : #testing }
-SoAbsNode >> isYoungBranch [
-	<generated>
-	^ false
-]
-
-{ #category : #testing }
 SoAbsNode >> maybeWorthSplitting [
-	^ false
-]
-
-{ #category : #testing }
-SoAbsNode >> okForBackEnsureEnoughSlots [
 	^ false
 ]
 
@@ -460,23 +336,8 @@ SoAbsNode >> subNodes [
 ]
 
 { #category : #'graph edition' }
-SoAbsNode >> subNodesAnySatisfy: aBlock [
-	self subNodes anySatisfy: aBlock 
-]
-
-{ #category : #'graph edition' }
-SoAbsNode >> subNodesDo: aBlock [
-	self subNodes do: aBlock 
-]
-
-{ #category : #'graph edition' }
 SoAbsNode >> subNodesRemoveUses [
-	self subNodesDo: [ :subNode | subNode removeUse: self ]
-]
-
-{ #category : #'graph edition' }
-SoAbsNode >> subNodesSize [
-	^ self subNodes size 
+	self subNodes do: [ :subNode | subNode removeUse: self ]
 ]
 
 { #category : #types }

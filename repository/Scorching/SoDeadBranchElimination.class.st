@@ -1,9 +1,10 @@
 "
 If the expression type can be inferred, removed the dead branch.
 
-I am used in 2 ways:
-- I remove dead branch on constants known types expression (true, etc.)
-- I am called to remove dead part of the CFG.
+I am used in 3 ways:
+- after inlining passes, I remove dead branch on constants (true ifTrue: and co).
+- after data passes, I am called on specific branches when the data pass has simplified some value leading to a boolean branch on a boolean constant (1<2 ifTrue: and co).
+- From the inliner itself, I am called to remove dead part of the CFG.
 
 I don't remove branches based on counters any more as it leads to issues with loops with rarely taken exits and NLRs.
 
@@ -57,7 +58,7 @@ SoDeadBranchElimination >> processBranch: branch [
 	branch isTraversedBy: self
 ]
 
-{ #category : #'public - dead branch elim' }
+{ #category : #public }
 SoDeadBranchElimination >> processBranches: br [
 	branches := br.
 	[branches isEmpty] whileFalse: 
@@ -89,7 +90,7 @@ SoDeadBranchElimination >> removeBranchFromList: instr [
 	
 ]
 
-{ #category : #'public - dead flow' }
+{ #category : #public }
 SoDeadBranchElimination >> removeDominatedPath: basicBlock [
 	| bbToRemove |
 	bbToRemove := self dominatedPath: basicBlock.
@@ -108,7 +109,7 @@ SoDeadBranchElimination >> removePathToLiveSuccessors: basicBlock deadBasicBlock
 			[ self removePredecessor: basicBlock from: succ ] ]
 ]
 
-{ #category : #'public - dead flow' }
+{ #category : #'branch removal' }
 SoDeadBranchElimination >> removePredecessor: basicBlock from: succ [
 	| phis |
 	succ removePredecessor: basicBlock.
@@ -121,7 +122,7 @@ SoDeadBranchElimination >> removePredecessor: basicBlock from: succ [
 	SoBasicBlockMerger new mergeIntoPredecessorIfPossible: succ.
 ]
 
-{ #category : #'public - dead branch elim' }
+{ #category : #public }
 SoDeadBranchElimination >> runOn: codeNode [
 	| bbWithBranches |
 	bbWithBranches :=  codeNode basicBlocks select: 
@@ -130,28 +131,28 @@ SoDeadBranchElimination >> runOn: codeNode [
 ]
 
 { #category : #'branch removal' }
-SoDeadBranchElimination >> traverseInstanceOfBranch: branch [
-	| type |
-	type := branch expression typeInformationAt: branch.
-	type isKnownType ifFalse: [ ^ self ].
-	(branch behaviors includesAll: type behaviors) 
-		ifTrue: [ self 
-			removeBranch: branch 
-			deadBasicBlock: branch falseBasicBlock 
-			liveBasicBlock: branch trueBasicBlock ].
-	(branch behaviors includesAny: type behaviors)
-		ifFalse: [ self 
-			removeBranch: branch 
-			deadBasicBlock: branch trueBasicBlock 
-			liveBasicBlock: branch falseBasicBlock ].
-]
-
-{ #category : #'branch removal' }
-SoDeadBranchElimination >> traversePipelinedBooleanBranch: branch [
+SoDeadBranchElimination >> traverseBooleanBranch: branch [
 	| type |
 	type := branch expression typeInformationAt: branch.
 	(type isOnlyType: True) 
 		ifTrue: [self removeBranch: branch deadBasicBlock: branch falseBasicBlock liveBasicBlock: branch trueBasicBlock].
 	(type isOnlyType: False) 
 		ifTrue: [self removeBranch: branch deadBasicBlock: branch trueBasicBlock liveBasicBlock: branch falseBasicBlock].
+]
+
+{ #category : #'branch removal' }
+SoDeadBranchElimination >> traverseBranchIfNotInstanceOf: branch [
+	| type |
+	type := branch expression typeInformationAt: branch.
+	type isKnownType ifFalse: [ ^ self ].
+	(branch behaviors includesAll: type behaviors) 
+		ifTrue: [ self 
+			removeBranch: branch 
+			deadBasicBlock: branch trueBasicBlock 
+			liveBasicBlock: branch falseBasicBlock ].
+	(branch behaviors includesAny: type behaviors)
+		ifFalse: [ self 
+			removeBranch: branch 
+			deadBasicBlock: branch falseBasicBlock 
+			liveBasicBlock: branch trueBasicBlock ].
 ]

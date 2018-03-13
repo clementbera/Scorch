@@ -30,6 +30,13 @@ SoPCConstant >> asDeopt [
 		yourself
 ]
 
+{ #category : #fixing }
+SoPCConstant >> fixPCConstantIn: sunkObj for: node at: position [
+	sunkObj fixedFields 
+		at: position 
+		put: (SoConstant constant: (node isTraversedBy: self))
+]
+
 { #category : #accessing }
 SoPCConstant >> instrPC [
 	<generated>
@@ -64,4 +71,44 @@ SoPCConstant >> nextPC: aValue [
 SoPCConstant >> shortPrintOn: s [
 	super shortPrintOn: s.
 	s << '[' << instrPC asString << ' -> ' << nextPC asString << ']'
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseBackjump: bj [
+	^ instrPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseBooleanBranch: branch [
+	^ nextPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseContextInstVar: glob [
+	^ nextPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseGlobal: glob [
+	^ nextPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseImmediateTrap: send [
+	^ instrPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseInstVar: glob [
+	^ nextPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseMutableLiteral: glob [
+	^ nextPC
+]
+
+{ #category : #traversing }
+SoPCConstant >> traverseSend: send [
+	^ nextPC
 ]

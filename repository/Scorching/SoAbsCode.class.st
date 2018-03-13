@@ -19,11 +19,7 @@ Class {
 		'debugInfo',
 		'compiledCode',
 		'decompSends',
-		'backendMaxTempIndex',
-		'inliningBonus'
-	],
-	#pools : [
-		'SoMagicConstants'
+		'backendMaxTempIndex'
 	],
 	#category : #'Scorching-Nodes'
 }
@@ -51,18 +47,16 @@ SoAbsCode >> addBasicBlock: bb before: existingBB [
 
 { #category : #accessing }
 SoAbsCode >> addBasicBlocks: bbs after: bb1 [
-	"profiler - rewritten for performance"
-	| index newBasicBlocks |
+	| index |
+	bbs do: [ :each | each codeNode: self ].
 	index := basicBlocks indexOf: bb1.
-	"Anticipate array size"
-	newBasicBlocks := OrderedCollection new: basicBlocks size + bbs size + 10.
-	"Don't create intermediate collections please. "
-	basicBlocks from: 1 to: index do: [ :elem | newBasicBlocks add: elem ].
-	bbs do: [ :elem | 
-		elem codeNode: self.
-		newBasicBlocks add: elem ].
-	basicBlocks from: index + 1 to: basicBlocks size do: [ :elem | newBasicBlocks add: elem ].
-	basicBlocks := newBasicBlocks
+	basicBlocks := (basicBlocks first: index) , bbs , (basicBlocks allButFirst: index)
+]
+
+{ #category : #accessing }
+SoAbsCode >> addBasicBlocks: bbs after: bb1 before: bb2 [
+	bbs do: [ :each | each codeNode: self ].
+	basicBlocks := (basicBlocks first: (basicBlocks indexOf: bb1)) , bbs , (basicBlocks allButFirst: (basicBlocks indexOf: bb2) - 1)
 ]
 
 { #category : #accessing }
@@ -193,29 +187,11 @@ SoAbsCode >> initialize [
 	dependencies := OrderedCollection new.
 	debugInfo := OrderedCollection new.
 	decompSends := OrderedCollection new.
-	inliningBonus := InitialInliningBonus. 
-]
-
-{ #category : #accessing }
-SoAbsCode >> inliningBonus [
-	^ inliningBonus
-]
-
-{ #category : #accessing }
-SoAbsCode >> inliningBonus: anObject [
-	inliningBonus := anObject
-]
-
-{ #category : #accessing }
-SoAbsCode >> inliningBonusDecay [
-	inliningBonus := inliningBonus - DecayInliningMalus
 ]
 
 { #category : #graph }
 SoAbsCode >> maintainPostOrder [
-	"profiler"
-	1 to: basicBlocks size do: [ :i |
-		(basicBlocks at: i) postOrder: i ].
+	 basicBlocks withIndexDo: [ :bb :i | bb postOrder: i ].
 ]
 
 { #category : #backend }

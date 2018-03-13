@@ -26,6 +26,7 @@ SoAbsCode >> printOn: s [
 { #category : #'*ScorchingDev' }
 SoAbsCode >> validateGraphSanity [
 	SoValidator new
+		options: #( graphSanity );
 		codeNode: self;
-		basicValidateGraphSanity 
+		validateGraphSanity 
 ]

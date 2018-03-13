@@ -47,19 +47,8 @@ SoPointerSunkObjectState >> convertToDeoptNode [
 ]
 
 { #category : #conversion }
-SoPointerSunkObjectState >> convertToDeoptNodeFor: node [
-	| fixedFieldPatched |
-	fixedFieldPatched := fixedFields copy.
-	fixedFieldPatched at: 2 put: ((node isImmediateTrap 
-		or: [node isBackjump])
-			ifTrue: [SoConstant constant: (fixedFields at: 2) instrPC ]
-			ifFalse: [SoConstant constant: (fixedFields at: 2) nextPC ]).
-	^ SoDeoptPointerObject new
-		theClass: theClass;
-		marker: marker;
-		fixedFields: (fixedFieldPatched collect: [ :f | f asDeopt ]);
-		variableFields: (variableFields collect: [ :f | f asDeopt ]);
-		yourself
+SoPointerSunkObjectState >> fixPCConstantFor: node [
+	(fixedFields at: 2) fixPCConstantIn: self for: node at: 2
 ]
 
 { #category : #accessing }
@@ -77,15 +66,14 @@ SoPointerSunkObjectState >> fixedFields: aValue [
 
 { #category : #'graph edition' }
 SoPointerSunkObjectState >> postCopy [
-	super postCopy.
 	fixedFields := fixedFields copy.
 	variableFields := variableFields copy.
 	self subNodesAddUses.
 ]
 
-{ #category : #accessing }
+{ #category : #'graph edition' }
 SoPointerSunkObjectState >> subNodes [
-	^ fixedFields , variableFields reject: [ :each | each isMarker ]
+	^ (fixedFields , variableFields) reject: [ :node | node isMarker ]
 ]
 
 { #category : #accessing }

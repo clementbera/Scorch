@@ -12,10 +12,12 @@ SoSmiNotEqualOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiNotEqualOp >> primitiveNumber [
-	^ 2037
+	<script>
+	^ USmiNotEqual
 ]
 
 { #category : #primitive }
 SoSmiNotEqualOp >> safePrimitiveNumber [
-	^ 8
+	<script>
+	^ NotEqual
 ]

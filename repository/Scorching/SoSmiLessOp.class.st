@@ -22,10 +22,12 @@ SoSmiLessOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoSmiLessOp >> primitiveNumber [
-	^ 2033
+	<script>
+	^ USmiLess
 ]
 
 { #category : #primitive }
 SoSmiLessOp >> safePrimitiveNumber [
-	^ 3
+	<script>
+	^ Less
 ]

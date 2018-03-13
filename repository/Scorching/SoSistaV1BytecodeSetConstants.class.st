@@ -18,8 +18,8 @@ SoSistaV1BytecodeSetConstants class >> initialize [
 	"
 	self initialize.
 	"
-	"maximum number of temporaries a method can have (compiled method header specification) + LargeFrameSize"
-	MaxNumTempsPerMethod := 52. "LargeFrame size 56 - 4 stack slots"
+	"maximum number of temporaries a method can have (compiled method header specification)"
+	MaxNumTempsPerMethod := 64.
 	"Constants that have bytecodes for single bytecode return"
 	SpecialReturnConstants := #( true false nil ).
 	"selector that can be encoded in a single bytecode send in the order they can be encoded."

@@ -1,7 +1,7 @@
 "
 Loop invariant code motion.
 
-I attempt to hoist code out of loops. Currently I hoist only traps, unforward  and size ops. I have 2 purposes:
+I attempt to hoist code out of loops. Currently I hoist only traps and size ops. I have 2 purposes:
 - I am a fall-back to hoist code out of loop if better loop optimisations such as loop peeling cannot be performed.
 - I canonicalize the loop, hoisting traps out, so better loop optimisations such as loop peeling can match the loop pattern and be performed.
 
@@ -17,7 +17,7 @@ Class {
 		'loops',
 		'loopHeads'
 	],
-	#category : #'Scorching-Pass-Flow'
+	#category : #'Scorching-Pass-Data'
 }
 
 { #category : #testing }
@@ -26,13 +26,13 @@ SoLICM >> canHoist: trap expression: expression outOf: loopDescr [
 	(self expression: trap expression inSpecializedBranchAt: trap inside: loopDescr) ifTrue: [ ^ false ].
 	expression ~= trap expression ifTrue: [ 
 		(self expression: expression inSpecializedBranchAt: trap expression inside: loopDescr) ifTrue: [ ^ false ] ].
-	^ (self fetchLoopHead: loopDescr headBasicBlock) notNil
+	^ true
 ]
 
 { #category : #testing }
 SoLICM >> expression: expression inSpecializedBranchAt: instr inside: loopDescr [
 	^ expression uses anySatisfy: [ :use |
-		(use isInstanceOfBranch
+		(use isBranchIfNotInstanceOf 
 			and: [ (loopDescr range rangeIncludes: use basicBlock postOrder) 
 				and: [ use specifyTypeOfExpressionAt: instr ] ]) ]
 ]
@@ -41,12 +41,13 @@ SoLICM >> expression: expression inSpecializedBranchAt: instr inside: loopDescr 
 SoLICM >> fetchLoopHead: headBasicBlock [
 	headBasicBlock instructionsButLastReverseDo: [ :instr |
 		instr isLoopHead ifTrue: [ ^ instr ] ].
-	^ nil
+	self error: 'should have a loop head'
 ]
 
 { #category : #private }
 SoLICM >> hoist: instr in: head [
 	| loopHead |
+	"('Hoisted trap on ' , instr behaviors printString , ' deopt to ' , ((instr deoptInfo sunkObjects first fixedFields at: 4) constant) printString ) logCr. " 
 	instr hasDeoptInfo ifTrue: [ 
 		loopHead := self fetchLoopHead: head.
 		instr replaceDeoptInfoBy: (loopHead deoptInfo convertToTrapWith: loopHead) ].
@@ -101,7 +102,7 @@ SoLICM >> loops: aValue [
 { #category : #traversing }
 SoLICM >> maybeEnterLoop: bb [
 	bb hasBackwardPredecessor ifTrue: [ 
-		loops add: (SoLICMLoop new 	
+		loops add: (SoLoopDescriptor new 	
 			headBasicBlock: bb forwardPredecessors anyOne;
 			range: (bb postOrder to: bb backwardPredecessor postOrder);
 			yourself) ].
@@ -143,6 +144,11 @@ SoLICM >> safeForwardTraversing: bb [
 ]
 
 { #category : #traversing }
+SoLICM >> traverseBackjump: bj [
+	loops removeLast
+]
+
+{ #category : #traversing }
 SoLICM >> traverseForwardBasicBlock: bb [
 	self maybeEnterLoop: bb.
 	self safeForwardTraversing: bb
@@ -154,11 +160,6 @@ SoLICM >> traverseLoopHead: loopHead [
 ]
 
 { #category : #traversing }
-SoLICM >> traverseNoInterruptBackjump: bj [
-	loops removeLast
-]
-
-{ #category : #traversing }
 SoLICM >> traverseSizeOp: sizeOp [
 	loops do: [ :loopDescr |
 		(self tryHoist: sizeOp outOf: loopDescr) ifTrue: [ ^ self ] ]
@@ -167,11 +168,6 @@ SoLICM >> traverseSizeOp: sizeOp [
 { #category : #traversing }
 SoLICM >> traverseTrapIfNotInstanceOf: trap [
 	self tryHoistTrap: trap
-]
-
-{ #category : #traversing }
-SoLICM >> traverseUnforward: op [
-	self hoistInBestLoop: op withExpression: op expression
 ]
 
 { #category : #private }

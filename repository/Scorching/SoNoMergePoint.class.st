@@ -4,5 +4,5 @@ I represent a merge point which does not exist. Typically in case of loops, you 
 Class {
 	#name : #SoNoMergePoint,
 	#superclass : #SoAbsMergePoint,
-	#category : #'Scorching-Pass-Split'
+	#category : #'Scorching-Pass-Flow'
 }

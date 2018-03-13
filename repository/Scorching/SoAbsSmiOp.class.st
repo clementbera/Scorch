@@ -13,12 +13,3 @@ Class {
 SoAbsSmiOp >> basicTypeInformation [
 	^ SoType smi
 ]
-
-{ #category : #'value numbering' }
-SoAbsSmiOp >> commute [
-	"Assumes operation is commutative"
-	| temp |
-	temp := self firstArg.
-	arguments := { receiver }.
-	receiver := temp
-]

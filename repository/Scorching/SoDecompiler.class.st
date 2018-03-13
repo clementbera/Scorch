@@ -114,12 +114,7 @@ SoDecompiler >> arithmeticSend: selector numArgs: numArgs [
 
 { #category : #'opcodes-control flow' }
 SoDecompiler >> backjump: delta [
-	self backjump: delta class: SoSmalltalkBackjump 
-]
-
-{ #category : #'opcodes-control flow' }
-SoDecompiler >> backjump: delta class: class [
-	| fixup bj |
+	| fixup |
 	fixup := fixups at: self shiftedPC + delta.
 	fixup backjumpFixedUp.
 	self ensureFixupAt: self shiftedPC.
@@ -137,17 +132,9 @@ SoDecompiler >> backjump: delta class: class [
 		builder switchToBasicBlock: fixup backJumpBasicBlock.
 		self addAndFillPhis: fixup backJumpBasicBlock.
 		self saveLiveVariables ].
-	bj := builder backjump: fixup targetBasicBlock class: class.
-	bj class = SoSmalltalkBackjump ifTrue: [self recordSunkContext: bj].
+	self recordSunkContext: (builder backjump: fixup targetBasicBlock).
 	self fillPhis: fixup targetBasicBlock.
 	
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> backjumpNoInterrupt [
-	| distance |
-	distance := self stackTop constant.
-	self backjump: distance class: SoNoInterruptBackjump 
 ]
 
 { #category : #'opcodes-sends' }
@@ -163,26 +150,12 @@ SoDecompiler >> basicSend: selector numArgs: numArgs [
 	^ send
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> binaryOp: class [
-	| instr |
-	instr := builder addInstr: (class new
-		receiver: (simStack at: stackp - 1);
-		arguments: {self stackTop} ;
-		yourself).
-	self drop: 2.
-	self push: instr.
-]
-
 { #category : #'opcodes-control flow' }
 SoDecompiler >> branch [
 	| jumpInstr |
-	(self stackTop isSmiCompOp or: [ self stackTop isPointerEquals ])
-		ifTrue: [ jumpInstr := builder rawBranch: self stackTop.
-				 self drop ]
-		ifFalse: [ jumpInstr := builder branch: self stackTop.
-				  self drop.
-				  self recordSunkContext: jumpInstr ].
+	jumpInstr := builder branch: self stackTop.
+	self drop.
+	self recordSunkContext: jumpInstr.
 	^ jumpInstr
 ]
 
@@ -198,31 +171,8 @@ SoDecompiler >> builder: aValue [
 	builder := aValue
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> byteAt [
-	| instr |
-	builder addInstr: (instr := SoByteRead new
-		object: (simStack at: stackp - 1);
-		index: self stackTop;
-		yourself).
-	self drop: 2.
-	self push: instr.
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> byteAtPut [
-	| instr |
-	builder addInstr: (instr := SoByteWrite new
-		expression: self stackTop;
-		object: (simStack at: stackp - 2);
-		index: (simStack at: stackp - 1);
-		yourself).
-	self drop: 3.
-	self push: instr expression.
-]
-
 { #category : #'opcodes-sends' }
-SoDecompiler >> callMethodPrimitive: primitiveIndex [
+SoDecompiler >> callPrimitive: primitiveIndex [
 	builder codeNode primitive: (SoPrimitive newForMethod: self method)
 ]
 
@@ -240,15 +190,14 @@ SoDecompiler >> callerDeoptInfo: aValue [
 
 { #category : #fixups }
 SoDecompiler >> canonicalizeLoopForwardEntries: fixup [
-	self reachJumpFixup: fixup.
-	"new basicblock will be the back jump target"
-	fixup targetBasicBlock: SoBasicBlock new.
-	self saveLiveVariables
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> characterAsInteger [
-	self unaryOp: SoCharacterAsIntegerOp
+	| loopStart |
+	"loop start will be the back jump target"
+	loopStart := SoBasicBlock new.
+	builder switchToBasicBlock: fixup targetBasicBlock.
+	self addAndFillPhis: fixup targetBasicBlock.
+	fixup targetBasicBlock: loopStart.
+	self saveLiveVariables.
+	self splitCriticalEdges.
 ]
 
 { #category : #initialization }
@@ -275,18 +224,6 @@ SoDecompiler >> closureRef [
 { #category : #accessing }
 SoDecompiler >> codeNodeClass [
 	self subclassResponsibility 
-]
-
-{ #category : #accessing }
-SoDecompiler >> context [
-	<generated>
-	^ context
-]
-
-{ #category : #accessing }
-SoDecompiler >> context: aValue [
-	<generated>
-	context := aValue
 ]
 
 { #category : #private }
@@ -318,22 +255,6 @@ SoDecompiler >> currentPC: aValue [
 	currentPC := aValue
 ]
 
-{ #category : #'sunk objects' }
-SoDecompiler >> currentSunkContext [
-	^SoPointerSunkObjectState new
-		theClass: ContextClass;
-		marker: self scopeMarker;
-		fixedFields: { 
-			callerDeoptInfo ifNil: [ SoConstant new ] ifNotNil: [ :deopt | deopt sunkObjects first marker ].
-			SoPCConstant new instrPC: currentPC; nextPC: pc; yourself.
-			SoConstant new constant: stackp.
-			SoConstant new constant: self method.
-			self closureRef.
-			receiver };
-		variableFields: (self copyStack: stackp);
-		yourself
-]
-
 { #category : #public }
 SoDecompiler >> decompile [
 	fixups := SoBackjumpScanner scan: self method.
@@ -344,23 +265,9 @@ SoDecompiler >> decompile [
 	^ builder terminate
 ]
 
-{ #category : #'opcodes-sends' }
-SoDecompiler >> directedSuperSend: selector numArgs: numArgs [ 
-	| expr mClass |
-	mClass := self extractMethodClassFromStackTopAndPop.
-	expr := self basicSend: selector numArgs: numArgs.
-	sendAndBranchDataHandler addSendData: expr pc: currentPC.
-	expr methodClass: mClass
-]
-
 { #category : #'opcodes-data movement' }
 SoDecompiler >> doDup [
 	self push: self stackTop
-]
-
-{ #category : #'opcodes-data movement' }
-SoDecompiler >> doNop [
-	"do nothing..."
 ]
 
 { #category : #'opcodes-data movement' }
@@ -393,15 +300,6 @@ SoDecompiler >> ensureParametersExist [
 		arg type: (SoSingleHintType for: (context objectClass: (context tempAt: arg index + 1))) ]
 ]
 
-{ #category : #'opcodes-sends' }
-SoDecompiler >> extractMethodClassFromStackTopAndPop [
-	| top |
-	top := self stackTop.
-	self drop.
-	top isConstant ifTrue: [ ^ top constant ].
-	^ top object expression literal value 
-]
-
 { #category : #fixups }
 SoDecompiler >> fillPhis: basicBlock [
 	builder fillPhi: basicBlock firstInstr withValues: basicBlock predecessors
@@ -424,41 +322,9 @@ SoDecompiler >> fixups: aValue [
 	fixups := aValue
 ]
 
-{ #category : #accessing }
-SoDecompiler >> getClassToInstall [
-	^ builder codeNode classToInstall
-]
-
 { #category : #private }
 SoDecompiler >> hasInstVar: value [
 	^ value class instSpec = 1 or: [ value class instSpec = 3 ]
-]
-
-{ #category : #'opcodes-mapped prim' }
-SoDecompiler >> immCheckByteAtPut [
-	| instr |
-	builder addInstr: (instr := SoReadOnlyCheckByteWrite new
-		expression: self stackTop;
-		object: (simStack at: stackp - 2);
-		index: (simStack at: stackp - 1);
-		yourself).
-	self drop: 3.
-	self push: instr expression.
-	self recordSunkContext: instr.
-]
-
-{ #category : #'opcodes-mapped prim' }
-SoDecompiler >> immCheckStoreCheckPointerAtPut [
-	| instr |
-	builder addInstr: (instr := SoReadOnlyCheckPointerWrite new
-		expression: self stackTop;
-		object: (simStack at: stackp - 2);
-		index: (simStack at: stackp - 1);
-		storeCheck: true;
-		yourself).
-	self drop: 3.
-	self push: instr expression.
-	self recordSunkContext: instr.
 ]
 
 { #category : #initialization }
@@ -482,32 +348,14 @@ SoDecompiler >> initialize [
 
 { #category : #initialization }
 SoDecompiler >> initializeWithCode [
-	builder codeNode compiledCode: self method
+	builder codeNode 
+		compiledCode: self method;
+		bytecodeApproximateSize: self method bytecodeSize.
 ]
 
 { #category : #initialization }
 SoDecompiler >> initializeWithContext: ctxt [
 	context := ctxt
-]
-
-{ #category : #fixups }
-SoDecompiler >> insertLoopHead [
-	self recordSunkContext: builder loopHead
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> instanceOfJumpFalse [
-	| delta jumpInstr behavior |
-	"Need to implement trap like jumpWritable..."
-	delta := self stackTop constant.
-	behavior := (simStack at: stackp - 1) constant.
-	jumpInstr := builder addCFGInstr: (SoInstanceOfBranch new 
-		expression: (simStack at: stackp - 2);
-		behaviors: {behavior};
-		yourself).
-	self drop: 3.
-	jumpInstr trueBasicBlock: (self ensureJumpFixupAt: self shiftedPC) targetBasicBlock.
-	jumpInstr falseBasicBlock: (self ensureJumpFixupAt: self shiftedPC + delta) targetBasicBlock.
 ]
 
 { #category : #fixups }
@@ -540,7 +388,6 @@ SoDecompiler >> jump: delta [
 
 { #category : #'opcodes-control flow' }
 SoDecompiler >> jump: delta if: boolean [
-	"Falls to Smalltalk jumpIf."
 	boolean
 		ifTrue: [ self jumpTrue: delta ]
 		ifFalse: [ self jumpFalse: delta ]
@@ -576,26 +423,6 @@ SoDecompiler >> jumpTrue: delta [
 	jumpInstr falseCount: data second
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> jumpWritable [
-	| distance expression |
-	distance := self stackTop constant.
-	self drop.
-	expression := self stackTop.
-	self drop.
-	(self nextByte = 217 and: [ distance = 1 ])
-		ifTrue: [ "This is a trap"
-			| trap |
-			trap := builder
-				addInstr:
-					(SoTrapIfReadOnly new
-						expression: expression;
-						yourself).
-			pc := pc + 1.	"skip the trap"
-			^ self recordSunkContext: trap ].
-	self shouldBeImplemented
-]
-
 { #category : #initialization }
 SoDecompiler >> method: method pc: startPC [
 	super method: method pc: startPC.
@@ -613,43 +440,9 @@ SoDecompiler >> nodeToReturn [
 	^ builder codeNode 
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> numBytes [
-	self unaryOp: SoByteSizeOp
-]
-
 { #category : #accessing }
 SoDecompiler >> numCopied [
 	^ self copiedValues size
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> numSlots [
-	self unaryOp: SoPointerSizeOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> pointerAt [
-	| instr |
-	builder addInstr: (instr := SoPointerRead new
-		object: (simStack at: stackp - 1);
-		index: self stackTop;
-		yourself).
-	self drop: 2.
-	self push: instr.
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> pointerAtPut [
-	| instr |
-	builder addInstr: (instr := SoPointerWrite new
-		expression: self stackTop;
-		object: (simStack at: stackp - 2);
-		index: (simStack at: stackp - 1);
-		storeCheck: false;
-		yourself).
-	self drop: 3.
-	^ self push: instr expression
 ]
 
 { #category : #'opcodes-sends' }
@@ -662,20 +455,14 @@ SoDecompiler >> pointerEquals [
 
 { #category : #'opcodes-data movement' }
 SoDecompiler >> popIntoLiteralVariable: assoc [ 
-	| store |
-	store := builder store: self stackTop global: assoc.
-	self drop.
-	store wasPopInto: true.
-	self recordSunkContext: store.
+	builder store: self stackTop global: assoc.
+	self drop
 ]
 
 { #category : #'opcodes-data movement' }
 SoDecompiler >> popIntoReceiverVariable: index [
-	| store |
-	store := builder store: self stackTop instVar: index of: receiver.
-	self drop.
-	store wasPopInto: true.
-	self recordSunkContext: store
+	builder store: self stackTop instVar: index of: receiver.
+	self drop
 ]
 
 { #category : #'opcodes-data movement' }
@@ -683,16 +470,12 @@ SoDecompiler >> popIntoRemoteTemp: remoteTempIndex inVectorAt: tempVectorIndex [
 	"can be an external inst var or a temp vect access"
 	| varHolder |
 	varHolder := simStack at: tempVectorIndex + 1.
+	varHolder isTempVector ifFalse: [ self error: 'shoulf be a temp vector' ].
 	builder 
 		store: self stackTop 
 		indirectTemp: remoteTempIndex 
 		vector: varHolder.
 	self drop
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> possibleRoot [
-	self unaryOp: SoPossibleRoot
 ]
 
 { #category : #private }
@@ -783,6 +566,7 @@ SoDecompiler >> pushRemoteTemp: remoteTempIndex inVectorAt: tempVectorIndex [
 	"Either an indirect temp access, or an external inst var access"
 	| varHolder indirectTmpRead currentValue |
 	varHolder := simStack at: tempVectorIndex + 1.
+	varHolder isTempVector ifFalse: [ self error: 'should be a temp vector' ].
 	indirectTmpRead := builder indirectTemp: remoteTempIndex vector: varHolder.
 	self push: indirectTmpRead.
 	"Seemingly too unreliable...
@@ -798,30 +582,19 @@ SoDecompiler >> pushTemporaryVariable: index [
 	self push: (simStack at: index + 1)
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> rawClass [
-	self unaryOp: SoRawClassOp 
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> rawEqualsEquals [
-	self binaryOp: SoRawPointerEqualsOp 
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> rawNotEqualsEquals [
-	self binaryOp: SoRawPointerNotEqualsOp 
-]
-
 { #category : #fixups }
 SoDecompiler >> reachBackjumpFixup: fixup [
+	
 	self saveLiveVariables.
 	"If other predecessors than the fall through path, needs canonicalization"
 	fixup targetBasicBlock predecessors size > 0 ifTrue: 
 		[ self canonicalizeLoopForwardEntries: fixup ].
-	self insertLoopHead.
+	self recordSunkContext: builder loopHead.
 	builder switchToBasicBlock: fixup targetBasicBlock.
 	currentLoopDepth := currentLoopDepth + 1.
+	self 
+		assert: fixup targetBasicBlock predecessors size = 1
+		description: 'decompilation for a backjump looks fishy'.
 	self restoreStackp: fixup targetBasicBlock predecessors anyOne.
 	self addPhis: fixup targetBasicBlock.
 ]
@@ -845,6 +618,9 @@ SoDecompiler >> reachJumpFixup: fixup [
 	self saveLiveVariables.
 	prevBasicBlock := builder currentBasicBlock.
 	builder switchToBasicBlock: fixup targetBasicBlock.
+	self 
+		assert: fixup targetBasicBlock predecessors size > 0
+		description: 'decompilation for a jump forward looks fishy'.
 	fixup targetBasicBlock predecessors size = 1 ifTrue: 
 		[ ^ self restoreStackFrom: prevBasicBlock to: fixup targetBasicBlock ].
 	self addAndFillPhis: fixup targetBasicBlock.
@@ -865,11 +641,24 @@ SoDecompiler >> receiver: aValue [
 
 { #category : #'sunk objects' }
 SoDecompiler >> recordSunkContext: node [
-	node deoptInfo: (SoDeoptimizationInformation new addSunkObject: self currentSunkContext).
+	
+	| ctxt |
+	ctxt := SoPointerSunkObjectState new
+		theClass: ContextClass;
+		marker: self scopeMarker;
+		fixedFields: { 
+			callerDeoptInfo ifNil: [ SoConstant new ] ifNotNil: [ :deopt | deopt sunkObjects first marker ].
+			SoPCConstant new instrPC: currentPC; nextPC: pc; yourself.
+			SoConstant new constant: stackp.
+			SoConstant new constant: self method.
+			self closureRef.
+			receiver };
+		variableFields: (self copyStack: stackp).
+	node deoptInfo: (SoDeoptimizationInformation new addSunkObject: ctxt).
 	callerDeoptInfo ifNotNil: 
 		[ :deopt | 
 		 	deopt sunkObjects do: [ :sunk |
-				node deoptInfo addSunkObject: sunk ] ].
+				node deoptInfo addSunkObject: sunk copy ] ].
 	
 ]
 
@@ -949,8 +738,8 @@ SoDecompiler >> sendSuper: selector numArgs: numArgs [
 SoDecompiler >> setReceiverType [
 	| cls |
 	receiver isReceiver ifFalse: [ ^ self ]. 
-	receiver type class == SoUnknownType ifFalse: [ ^ self ]. "== class is important (subclass work)"
-	cls := self getClassToInstall.
+	receiver type ifNotNil: [ ^ self ]. "From self send inlining."
+	cls := builder codeNode classToInstall.
 	receiver type: ((NoStoreCheckTypes includes: cls)
 		ifTrue: [ SoKnownType for: cls ]
 		ifFalse: [ cls subclasses isEmpty 
@@ -990,81 +779,6 @@ SoDecompiler >> simStack: aValue [
 	simStack := aValue
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiAdd [
-	self binaryOp: SoSmiAddOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiBitAnd [
-	self binaryOp: SoSmiBitAndOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiBitOr [
-	self binaryOp: SoSmiBitOrOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiBitShiftLeft [
-	self binaryOp: SoSmiBitShiftLeftOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiBitShiftRight [
-	self binaryOp: SoSmiBitShiftRightOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiBitXor [
-	self binaryOp: SoSmiBitXorOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiDiv [
-	self binaryOp: SoSmiDivOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiEquals [
-	self binaryOp: SoSmiEqualOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiLess [
-	self binaryOp: SoSmiLessOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiLessOrEqual [
-	self binaryOp: SoSmiLessOrEqualOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiMod [
-	self binaryOp: SoSmiModOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiMul [
-	self binaryOp: SoSmiMulOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiNotEquals [
-	self binaryOp: SoSmiNotEqualOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiQuo [
-	self binaryOp: SoSmiQuoOp
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> smiSub [
-	self binaryOp: SoSmiSubOp 
-]
-
 { #category : #'opcodes-sends' }
 SoDecompiler >> specialSend: selector numArgs: numArgs [
 
@@ -1101,36 +815,20 @@ SoDecompiler >> stackTop [
 	^ simStack at: stackp
 ]
 
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> storeCheckPointerAtPut [
-	| instr |
-	builder addInstr: (instr := SoPointerWrite new
-		expression: self stackTop;
-		object: (simStack at: stackp - 2);
-		index: (simStack at: stackp - 1);
-		storeCheck: true;
-		yourself).
-	self drop: 3.
-	^ self push: instr expression
-]
-
-{ #category : #'opcodes-data movement' }
-SoDecompiler >> storeIntoContextReceiverVariable: index [
-	builder store: self stackTop contextInstVar: index of: receiver
-]
-
 { #category : #'opcodes-data movement' }
 SoDecompiler >> storeIntoLiteralVariable: assoc [ 
-	| store |
-	store := builder store: self stackTop global: assoc.
-	self recordSunkContext: store.
+	| top |
+	top := self stackTop.
+	self popIntoLiteralVariable: assoc.
+	self push: top
 ]
 
 { #category : #'opcodes-data movement' }
 SoDecompiler >> storeIntoReceiverVariable: index [ 
-	| store |
-	store := builder store: self stackTop instVar: index of: receiver.
-	self recordSunkContext: store
+	| top |
+	top := self stackTop.
+	self popIntoReceiverVariable: index.
+	self push: top
 ]
 
 { #category : #'opcodes-data movement' }
@@ -1147,25 +845,4 @@ SoDecompiler >> storeIntoTemporaryVariable: index [
 	index < self method numArgs ifTrue: [ self argumentAssigment: index ].
 	
 	simStack at: index + 1 put: self stackTop.
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> unaryOp: class [
-	| instr |
-	instr := builder addInstr: (class new
-		receiver: self stackTop;
-		arguments: #();
-		yourself).
-	self drop.
-	self push: instr.
-]
-
-{ #category : #'opcodes-unmapped prim' }
-SoDecompiler >> unforward [
-	| instr |
-	instr := builder addInstr: (SoUnforward new
-		expression: self stackTop;
-		yourself).
-	self drop.
-	self push: instr.
 ]

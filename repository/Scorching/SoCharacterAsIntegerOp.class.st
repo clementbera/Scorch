@@ -20,7 +20,7 @@ SoCharacterAsIntegerOp >> isTraversedBy: aTraverser [
 
 { #category : #primitive }
 SoCharacterAsIntegerOp >> primitiveNumber [
-	^ 1030
+	^ UCharacterAsInteger
 ]
 
 { #category : #type }

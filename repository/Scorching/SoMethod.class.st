@@ -11,9 +11,6 @@ Class {
 		'primitive',
 		'classToInstall'
 	],
-	#classVars : [
-		'COLLECT'
-	],
 	#category : #'Scorching-Nodes'
 }
 

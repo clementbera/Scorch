@@ -10,6 +10,30 @@ Class {
 }
 
 { #category : #'bytecode generation' }
+SoEffect >> genClassOp: node with: builder [
+	<script>
+	"effect free"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genContextInstVarRead: node with: builder [
+	<script>
+	"effect-free, nothing"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genContextInstVarWrite: node with: builder [
+	<script>
+	builder genPopIntoContextInstVar: node
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genCreateArray: node with: builder [
+	<script>
+	"effect free"
+]
+
+{ #category : #'bytecode generation' }
 SoEffect >> genCreateContextFullBlock: node with: builder [
 	<script>
 	"effect free"
@@ -22,7 +46,33 @@ SoEffect >> genCreateFullBlock: node with: builder [
 ]
 
 { #category : #'bytecode generation' }
-SoEffect >> genInstantiation: node with: builder [
+SoEffect >> genCreateTempVect: node with: builder [
+	<script>
+	"effect free"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genGlobalRead: node with: builder [
+	<script>
+	"effect-free, nothing"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genGlobalWrite: node with: builder [
+	<script>
+	builder genPopIntoGlobal: node
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genInstVarRead: node with: builder [
+	<script>
+	"effect-free, nothing"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genInstVarWrite: node with: builder [
+	<script>
+	builder genPopIntoInstVar: node
 ]
 
 { #category : #'bytecode generation' }
@@ -49,6 +99,24 @@ SoEffect >> genPhi: aScPhi tempInput: aScSend with: aScBytecodeBuilder [
 SoEffect >> genPhi: node with: builder [
 	<script>
 	"effect free"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genPointerEqualsOp: node with: builder [
+	<script>
+	"effect free"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genRemoteTempRead: node with: builder [
+	<script>
+	"effect-free, nothing"
+]
+
+{ #category : #'bytecode generation' }
+SoEffect >> genRemoteTempWrite: node with: builder [
+	<script>
+	builder genPopIntoRemoteTemp: node
 ]
 
 { #category : #'bytecode generation' }

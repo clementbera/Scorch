@@ -5,7 +5,7 @@ I represent a branch merge point too difficult to handle by the optimizer curren
 Class {
 	#name : #SoComplexMergePoint,
 	#superclass : #SoAbsMergePoint,
-	#category : #'Scorching-Pass-Split'
+	#category : #'Scorching-Pass-Flow'
 }
 
 { #category : #testing }

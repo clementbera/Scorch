@@ -18,7 +18,7 @@ SoByteEqualOp >> computeStatically [
 	^ SoConstant constant: (ByteString 
 		compare: receiver constant 
 		with: self firstArg constant 
-		collated: (ByteString classBindingOf: #AsciiOrder) value) = 2
+		collated: (ByteString classBindingOf: #AsciiOrder)) = 2
 ]
 
 { #category : #traversing }

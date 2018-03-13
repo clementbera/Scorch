@@ -9,8 +9,7 @@ Class {
 	#name : #SoBackjumpScanner,
 	#superclass : #SoAbstractScanner,
 	#instVars : [
-		'fixups',
-		'lastConstant'
+		'fixups'
 	],
 	#category : #'Scorching-Decompiler'
 }
@@ -18,11 +17,6 @@ Class {
 { #category : #public }
 SoBackjumpScanner class >> scan: compiledCode [
 	^ (self on: compiledCode) scan
-]
-
-{ #category : #opcodes }
-SoBackjumpScanner >> backjumpNoInterrupt [
-	self jump: lastConstant
 ]
 
 { #category : #accessing }
@@ -45,41 +39,20 @@ SoBackjumpScanner >> jump: delta [
 		ifNotNil: [ :fixup | fixup additionalBackjump ]
 ]
 
-{ #category : #accessing }
-SoBackjumpScanner >> lastConstant [
-	<generated>
-	^ lastConstant
-]
-
-{ #category : #accessing }
-SoBackjumpScanner >> lastConstant: aValue [
-	<generated>
-	lastConstant := aValue
-]
-
 { #category : #opcodes }
 SoBackjumpScanner >> pushActiveContext [
 	SoContextAccessed signal.
 ]
 
-{ #category : #opcodes }
-SoBackjumpScanner >> pushConstant: cst [
-	lastConstant := cst
-]
-
-{ #category : #opcodes }
-SoBackjumpScanner >> pushContextReceiverVariable: index [
-	SoContextAccessed signal.
-]
-
 { #category : #public }
 SoBackjumpScanner >> scan [
-	fixups := Array new: self method bytecodeSize + 1.
+	self setUpScanner.
 	self interpret.
 	^ fixups
 ]
 
-{ #category : #opcodes }
-SoBackjumpScanner >> storeIntoContextReceiverVariable: index [
-	SoContextAccessed signal.
+{ #category : #initialization }
+SoBackjumpScanner >> setUpScanner [
+	stackp := self method numTemps.
+	fixups := Array new: self method bytecodeSize + 1.
 ]

@@ -1,5 +1,5 @@
 "
-Empty node, represent the last instruction before a loop body (back jump target). Used to holds deoptimization information to hoist traps out of loops.
+empty node, represent the last instruction before a loop body (back jump target). Typically used to holds deoptimization information to hoist code out of loops later.
 "
 Class {
 	#name : #SoLoopHead,
@@ -19,13 +19,8 @@ SoLoopHead >> deoptInfo [
 { #category : #accessing }
 SoLoopHead >> deoptInfo: aValue [
 	<generated>
-	aValue ifNotNil: [aValue instruction: self].
+	aValue ifNotNil: [aValue sunkObjects do: [ :sunkObj | sunkObj node: self ] ].
 	deoptInfo := aValue
-]
-
-{ #category : #testing }
-SoLoopHead >> hasBreakingDeoptPoint [
-	^ false
 ]
 
 { #category : #testing }

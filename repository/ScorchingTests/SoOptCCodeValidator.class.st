@@ -50,6 +50,8 @@ SoOptCCodeValidator >> prevPC [
 
 { #category : #decoding }
 SoOptCCodeValidator >> send: selector super: supered numArgs: numberArguments [
+	"sends should have deopt info"
+	(selector = #== or: [selector = #~~ or: [selector = #class]]) ifTrue: [ ^ self ].
 	self ensureDeoptMetadataAt: self nextPC string: 'send'
 ]
 

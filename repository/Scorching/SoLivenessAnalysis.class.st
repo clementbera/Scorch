@@ -25,12 +25,12 @@ SoLivenessAnalysis >> addInterferenceBetween: instr1 and: instr2 [
 { #category : #private }
 SoLivenessAnalysis >> ensureDeoptRefAlive: deoptInfo [
 	deoptInfo sunkObjects do: [ :sunkObj |
-		sunkObj subNodesDo: [ :each | self markAsAliveIfTemp: each ] ]
+		sunkObj subNodes do: [ :each | self markAsAliveIfTemp: each ] ]
 ]
 
 { #category : #private }
 SoLivenessAnalysis >> ensureSubnodesAlive: node [
-	node subNodesDo: [ :n | self markAsAliveIfTemp: n ] .
+	node subNodes do: [ :n | self markAsAliveIfTemp: n ] .
 ]
 
 { #category : #initialization }

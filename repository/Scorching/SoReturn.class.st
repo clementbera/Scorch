@@ -73,24 +73,3 @@ SoReturn >> subNodes [
 	<generated>
 	^ {returnedValue}
 ]
-
-{ #category : #'graph edition' }
-SoReturn >> subNodesAnySatisfy: aBlock [
-	"profiling"
-	<generated>
-	^aBlock value: returnedValue.
-	
-]
-
-{ #category : #'graph edition' }
-SoReturn >> subNodesDo: aBlock [
-	"profiling"
-	<generated>
-	aBlock value: returnedValue
-]
-
-{ #category : #'graph edition' }
-SoReturn >> subNodesSize [
-	<generated>
-	^ 1
-]
