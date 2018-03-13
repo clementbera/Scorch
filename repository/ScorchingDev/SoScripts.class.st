@@ -67,17 +67,30 @@ SoScripts class >> displayClasses [
 ]
 
 { #category : #development }
-SoScripts class >> openInitialWorkspace [
-	GTPlayground openContents: '"Step 1: image recompilation with new bytecode set"
-CompilationContext bytecodeBackend: OpalEncoderForSistaV1 .
-CompilationContext usesFullBlockClosure: true .
-OpalCompiler recompileAll.
+SoScripts class >> openImagePreparationWorkspace [
+	GTPlayground openContents: '
+	"Disable freetype for non freetype compatible VMs, to avoid crashes and for fast VM simulation"
+	#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
+	SessionManager default unregisterClassNamed: each  ].
 
-"Step 2: ensure the validation works (expected 4 failures on context access)"
+	"Put correct value in special object array, patch mourner bug."
+Smalltalk specialObjectsArray at: 60 put: #trapTripped .
+ Smalltalk specialObjectsArray at: 59 put: nil .
+ WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
+
+CompilationContext bytecodeBackend: (Smalltalk at: #OpalEncoderForSistaV1 ifAbsent: [ EncoderForSistaV1 ]) .
+ CompilationContext usesFullBlockClosure: true.
+ OpalCompiler recompileAll.'
+]
+
+{ #category : #development }
+SoScripts class >> openInitialWorkspace [
+	GTPlayground openContents: '
+"Ensure the validation works (expected failures on context access)"
 SoValidator new
-	validateMethods: SoValidator allExamples
-	passes: #(O0 O1 #O1b O2)
-	options: #( graphSanity comparison reportToTranscript ) .
+	validateMethods: (SoValidator allMethods)
+	passes: { {#optimizeCodeNode} }
+	options: #(finalGraphSanity reportToTranscript ) .
 
 "Script to recover the systems" 
 CompiledMethod allInstances do: [ :each | (each isOptimized and: [ each metadata isCustomized ifNil: [ false ] ]) ifTrue: [ SoDependencyMap default uninstallMethod: each ]  ].
@@ -95,30 +108,6 @@ Smalltalk specialObjectsArray at: 59 put: nil.
 SoValidator exPass: true.
 SoValidator exPass: false.
 SoValidator timeout: 1000.' 
-]
-
-{ #category : #development }
-SoScripts class >> openLoadingWorkspace [
-	GTPlayground openContents: '#(FT2Handle FreeTypeCache FreeTypeSettings) do: [ :each | 
-	SessionManager default unregisterClassNamed: each  ].
-
-Smalltalk specialObjectsArray at: 60 put: #trapTripped .
- Smalltalk specialObjectsArray at: 59 put: nil .
- WeakArray class compile: ''primitiveFetchMourner < primitive: 172 error: ec > ^ nil'' classified: #patch .
- 
-ConfigurationOfScorch loadBleedingEdge.
-
-SoScripts openInitialWorkspace.
-
-CompilationContext bytecodeBackend: OpalEncoderForSistaV1 .
- CompilationContext usesFullBlockClosure: true.
- OpalCompiler recompileAll.
- Transcript clear.
- Transcript open.
- SoValidator new 
-	validateMethods: SoValidator allExamples 
-	passes: #(O2) 
-	options: #( graphSanity reportToTranscript ).' 
 ]
 
 { #category : #utils }
